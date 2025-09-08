@@ -1,25 +1,32 @@
-"use client"
+/** @format */
 
-import type React from "react"
+"use client";
 
-import { usePathname } from "next/navigation"
-import { useEffect } from "react"
-import Navbar from "@/components/navbar"
-import Footer from "@/components/footer"
+import type React from "react";
 
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
+import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
+import { ReduxProvider } from "@/components/redux-provider";
+
+export default function ClientLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
 
   // Scroll to top on route change
   useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [pathname])
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
   return (
-    <>
+    <ReduxProvider>
       <Navbar />
       <main className="pt-12">{children}</main>
       <Footer />
-    </>
-  )
+    </ReduxProvider>
+  );
 }

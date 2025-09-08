@@ -6,7 +6,6 @@ import { ThemeProvider } from "@/components/theme-provider";
 import ClientLayout from "./client-layout";
 import { AuthProvider } from "@/contexts/auth-context";
 import SmoothTransitionProvider from "@/components/smooth-transition-provider";
-import { ReduxProvider } from "@/components/redux-provider";
 
 export const metadata = {
   title: "BluBerry - Selling Made Simpler",
@@ -22,19 +21,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ReduxProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem={true}
-          >
-            <AuthProvider>
-              <ClientLayout>
-                <SmoothTransitionProvider>{children}</SmoothTransitionProvider>
-              </ClientLayout>
-            </AuthProvider>
-          </ThemeProvider>
-        </ReduxProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={true}
+        >
+          <AuthProvider>
+            <ClientLayout>
+              <SmoothTransitionProvider>{children}</SmoothTransitionProvider>
+            </ClientLayout>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
