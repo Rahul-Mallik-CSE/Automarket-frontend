@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import { ReduxProvider } from "@/components/redux-provider";
+import Providers from "@/redux/Providers";
 
 export default function ClientLayout({
   children,
@@ -23,10 +23,10 @@ export default function ClientLayout({
   }, [pathname]);
 
   return (
-    <ReduxProvider>
+    <Providers>
       <Navbar />
       <main className="pt-12">{children}</main>
       <Footer />
-    </ReduxProvider>
+    </Providers>
   );
 }
