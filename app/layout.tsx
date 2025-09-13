@@ -4,7 +4,7 @@ import type React from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import ClientLayout from "./client-layout";
-import { AuthProvider } from "@/contexts/auth-context";
+
 import SmoothTransitionProvider from "@/components/smooth-transition-provider";
 
 export const metadata = {
@@ -26,11 +26,9 @@ export default function RootLayout({
           defaultTheme="light"
           enableSystem={true}
         >
-          <AuthProvider>
-            <ClientLayout>
-              <SmoothTransitionProvider>{children}</SmoothTransitionProvider>
-            </ClientLayout>
-          </AuthProvider>
+          <ClientLayout>
+            <SmoothTransitionProvider>{children}</SmoothTransitionProvider>
+          </ClientLayout>
         </ThemeProvider>
       </body>
     </html>

@@ -8,7 +8,8 @@ import { usePathname } from "next/navigation";
 import { Menu, X, SearchIcon, Settings, User } from "lucide-react";
 import { BluberryLogoSVG } from "@/components/blueberry-logo-svg";
 import SearchModal from "@/components/search";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuth } from "@/hooks/userAuth";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +44,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
 
   // Handle scroll events
   useEffect(() => {
@@ -133,7 +134,9 @@ export default function Navbar() {
               <DropdownMenuContent align="end">
                 {user ? (
                   <>
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuLabel>
+                      {profile?.full_name || user.full_name || user.email}
+                    </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href="/profile">Profile</Link>
