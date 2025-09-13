@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Menu, X, SearchIcon, Settings, User } from "lucide-react";
 import { BluberryLogoSVG } from "@/components/blueberry-logo-svg";
 import SearchModal from "@/components/search";
@@ -22,8 +23,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 // import { ThemeToggle } from "@/components/theme-toggle"
 
-// Navigation items
-const mainNavItems = [
+// Navigation items for unauthenticated users
+const publicNavItems = [
+  { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/how-it-works", label: "How It Works" },
+  { href: "/contact", label: "Contact" },
+];
+
+// Navigation items for authenticated users
+const privateNavItems = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
   { href: "/faq", label: "FAQ" },
@@ -31,11 +41,6 @@ const mainNavItems = [
   { href: "/reviews", label: "Reviews" },
   { href: "/contact", label: "Contact" },
   { href: "/sell-multiple-items", label: "Sell Your Item" },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: <Settings className="h-4 w-4" />,
-  },
 ];
 
 export default function Navbar() {
@@ -43,8 +48,12 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const router = useRouter();
 
-  const { user, profile, logout } = useAuth();
+  const { user, profile, logout, isAuthenticated } = useAuth();
+
+  // Get navigation items based on authentication status
+  const navigationItems = isAuthenticated ? privateNavItems : publicNavItems;
 
   // Handle scroll events
   useEffect(() => {
@@ -64,6 +73,18 @@ export default function Navbar() {
     // Close mobile menu when route changes
     setIsMenuOpen(false);
   }, [pathname]);
+
+  // Function to handle navigation for protected routes
+  const handleNavigation = (href: string, e: React.MouseEvent) => {
+    // Check if this is a protected route and user is not authenticated
+    const protectedRoutes = ["/sell-multiple-items", "/reviews"];
+
+    if (protectedRoutes.includes(href) && !isAuthenticated) {
+      e.preventDefault();
+      router.push("/auth/sign-in");
+      return;
+    }
+  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -92,17 +113,18 @@ export default function Navbar() {
 
           {/* Desktop navigation - centered in the middle */}
           <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-            {mainNavItems.map((item) => (
+            {navigationItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={(e) => handleNavigation(item.href, e)}
                 className={`px-3 py-2 text-sm rounded-md transition-colors hover:text-primary ${
                   pathname === item.href
                     ? "text-primary font-medium"
                     : "text-foreground/80"
                 }`}
               >
-                {item.label || item.title}
+                {item.label || (item as any).title}
               </Link>
             ))}
           </div>
@@ -145,15 +167,6 @@ export default function Navbar() {
                       Sign out
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuLabel>Tools</DropdownMenuLabel>
-                    <DropdownMenuItem asChild>
-                      <Link href="/tools/item-identifier">Item Identifier</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/tools/description-generator">
-                        Description Generator
-                      </Link>
-                    </DropdownMenuItem>
                   </>
                 ) : (
                   <>
@@ -188,17 +201,18 @@ export default function Navbar() {
             {/* <div className="flex items-center justify-center py-2">
               <ThemeToggle />
             </div> */}
-            {mainNavItems.map((item) => (
+            {navigationItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={(e) => handleNavigation(item.href, e)}
                 className={`px-3 py-2 text-sm rounded-md transition-colors hover:bg-muted text-center w-full ${
                   pathname === item.href
                     ? "text-primary font-medium"
                     : "text-foreground/80"
                 }`}
               >
-                {item.label || item.title}
+                {item.label || (item as any).title}
               </Link>
             ))}
           </div>

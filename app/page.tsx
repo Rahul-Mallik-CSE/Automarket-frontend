@@ -1,6 +1,8 @@
-"use client"
+/** @format */
 
-import Link from "next/link"
+"use client";
+
+import Link from "next/link";
 import {
   ArrowRight,
   Star,
@@ -14,58 +16,71 @@ import {
   DollarSign,
   CheckCircle,
   XCircle,
-} from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
-import ContentAnimation from "@/components/content-animation"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import ContentAnimation from "@/components/content-animation";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/userAuth";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export default function Home() {
-  const router = useRouter()
-  const [showInitialLine, setShowInitialLine] = useState(true)
-  const isMobile = useIsMobile()
-  const [scrollY, setScrollY] = useState(0)
+  const router = useRouter();
+  const [showInitialLine, setShowInitialLine] = useState(true);
+  const isMobile = useIsMobile();
+  const [scrollY, setScrollY] = useState(0);
+  const { isAuthenticated } = useAuth();
 
   // Function to navigate to sell item page with smooth transition
   const navigateToSellItem = () => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      router.push("/auth/sign-in");
+      return;
+    }
+
     // Add a subtle animation before navigation
-    document.body.style.opacity = "0.9"
-    document.body.style.transition = "opacity 0.3s ease"
+    document.body.style.opacity = "0.9";
+    document.body.style.transition = "opacity 0.3s ease";
 
     setTimeout(() => {
-      router.push("/sell-multiple-items")
-    }, 200)
-  }
+      router.push("/sell-multiple-items");
+    }, 200);
+  };
 
   // Effect to show and hide the line on initial load
   useEffect(() => {
     const hideTimer = setTimeout(() => {
-      setShowInitialLine(false)
-    }, 100)
-    return () => clearTimeout(hideTimer)
-  }, [])
+      setShowInitialLine(false);
+    }, 100);
+    return () => clearTimeout(hideTimer);
+  }, []);
 
   // Track scroll position for parallax effects
   useEffect(() => {
     const handleScroll = () => {
-      setScrollY(window.scrollY)
-    }
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+      setScrollY(window.scrollY);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Add this useEffect after the existing useEffect
   useEffect(() => {
     // Reset body opacity when component mounts
-    document.body.style.opacity = "1"
-    document.body.style.transition = "opacity 0.5s ease"
+    document.body.style.opacity = "1";
+    document.body.style.transition = "opacity 0.5s ease";
 
     return () => {
       // Clean up
-      document.body.style.transition = ""
-    }
-  }, [])
+      document.body.style.transition = "";
+    };
+  }, []);
 
   return (
     <div className="bg-background relative overflow-hidden">
@@ -112,12 +127,12 @@ export default function Home() {
                 <span className="block sm:hidden">How It Works</span>
                 <span className="hidden sm:block">Learn How It Works</span>
               </Link>
-              <Link
-                href="/sell-multiple-items"
+              <button
+                onClick={navigateToSellItem}
                 className="inline-block border-2 border-[#6a5acd] text-[#6a5acd] px-12 py-[0.3125rem] md:px-8 md:py-1.5 rounded-full font-medium hover:bg-gradient-to-r hover:from-[#3B82F6] hover:to-[#8c52ff] hover:text-white hover:border-transparent hover:shadow-md hover:translate-y-[-1px] transition-all text-center text-xs md:text-sm"
               >
                 Sell Your Item
-              </Link>
+              </button>
             </div>
           </ContentAnimation>
 
@@ -126,9 +141,12 @@ export default function Home() {
             <div className="mt-12 md:hidden">
               <div className="flex flex-col items-center space-y-6">
                 <div className="text-center max-w-sm">
-                  <p className="text-lg font-light text-foreground mb-2">Your selling partner</p>
+                  <p className="text-lg font-light text-foreground mb-2">
+                    Your selling partner
+                  </p>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    We're building a service to help you sell your items with less hassle and more convenience
+                    We're building a service to help you sell your items with
+                    less hassle and more convenience
                   </p>
                 </div>
 
@@ -151,7 +169,9 @@ export default function Home() {
                     <div className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#3B82F6] to-[#8c52ff]">
                       Easy
                     </div>
-                    <div className="text-xs text-muted-foreground">Experience</div>
+                    <div className="text-xs text-muted-foreground">
+                      Experience
+                    </div>
                   </div>
                 </div>
               </div>
@@ -182,22 +202,32 @@ export default function Home() {
               <div className="grid md:grid-cols-3 gap-6 text-center">
                 <div className="bg-white/50 dark:bg-black/20 p-6 rounded-xl">
                   <Package className="h-12 w-12 mx-auto mb-4 text-[#3B82F6]" />
-                  <p className="text-lg font-semibold text-foreground mb-2">Fill Out a Form</p>
+                  <p className="text-lg font-semibold text-foreground mb-2">
+                    Fill Out a Form
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    Simple online form - just describe your items and upload photos
+                    Simple online form - just describe your items and upload
+                    photos
                   </p>
                 </div>
                 <div className="bg-white/50 dark:bg-black/20 p-6 rounded-xl">
                   <Truck className="h-12 w-12 mx-auto mb-4 text-[#8c52ff]" />
-                  <p className="text-lg font-semibold text-foreground mb-2">We Come To You</p>
+                  <p className="text-lg font-semibold text-foreground mb-2">
+                    We Come To You
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    Professional pickup at your door - no other platform does this
+                    Professional pickup at your door - no other platform does
+                    this
                   </p>
                 </div>
                 <div className="bg-white/50 dark:bg-black/20 p-6 rounded-xl">
                   <DollarSign className="h-12 w-12 mx-auto mb-4 text-[#3B82F6]" />
-                  <p className="text-lg font-semibold text-foreground mb-2">Instant Cash</p>
-                  <p className="text-sm text-muted-foreground">Get paid immediately when we collect your items</p>
+                  <p className="text-lg font-semibold text-foreground mb-2">
+                    Instant Cash
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Get paid immediately when we collect your items
+                  </p>
                 </div>
               </div>
             </div>
@@ -210,8 +240,12 @@ export default function Home() {
               <div className="bg-red-50 dark:bg-red-950/20 p-6 rounded-2xl border-2 border-red-200 dark:border-red-800">
                 <div className="text-center mb-6">
                   <XCircle className="h-16 w-16 mx-auto mb-4 text-red-500" />
-                  <h3 className="text-2xl font-light tracking-wide text-red-600 dark:text-red-400">Before BluBerry</h3>
-                  <p className="text-lg text-red-500 dark:text-red-300">The Old Way Was Hard</p>
+                  <h3 className="text-2xl font-light tracking-wide text-red-600 dark:text-red-400">
+                    Before BluBerry
+                  </h3>
+                  <p className="text-lg text-red-500 dark:text-red-300">
+                    The Old Way Was Hard
+                  </p>
                 </div>
 
                 <div className="space-y-4">
@@ -275,7 +309,9 @@ export default function Home() {
                   <h3 className="text-2xl font-light tracking-wide text-green-600 dark:text-green-400">
                     With BluBerry
                   </h3>
-                  <p className="text-lg text-green-500 dark:text-green-300">Selling Made Simple</p>
+                  <p className="text-lg text-green-500 dark:text-green-300">
+                    Selling Made Simple
+                  </p>
                 </div>
 
                 <div className="space-y-4">
@@ -364,8 +400,12 @@ export default function Home() {
                       "Reviews coming soon..."
                     </p>
                     <div>
-                      <p className="font-medium text-xs text-muted-foreground">Your Name</p>
-                      <p className="text-xs text-muted-foreground/70">Your Location</p>
+                      <p className="font-medium text-xs text-muted-foreground">
+                        Your Name
+                      </p>
+                      <p className="text-xs text-muted-foreground/70">
+                        Your Location
+                      </p>
                     </div>
                   </div>
                 </AccordionContent>
@@ -389,8 +429,12 @@ export default function Home() {
                       "Be the first to leave a review..."
                     </p>
                     <div>
-                      <p className="font-medium text-xs text-muted-foreground">Future Customer</p>
-                      <p className="text-xs text-muted-foreground/70">Your City</p>
+                      <p className="font-medium text-xs text-muted-foreground">
+                        Future Customer
+                      </p>
+                      <p className="text-xs text-muted-foreground/70">
+                        Your City
+                      </p>
                     </div>
                   </div>
                 </AccordionContent>
@@ -414,8 +458,12 @@ export default function Home() {
                       "Share your experience with BluBerry..."
                     </p>
                     <div>
-                      <p className="font-medium text-xs text-muted-foreground">Valued Customer</p>
-                      <p className="text-xs text-muted-foreground/70">Anywhere, USA</p>
+                      <p className="font-medium text-xs text-muted-foreground">
+                        Valued Customer
+                      </p>
+                      <p className="text-xs text-muted-foreground/70">
+                        Anywhere, USA
+                      </p>
                     </div>
                   </div>
                 </AccordionContent>
@@ -433,12 +481,14 @@ export default function Home() {
                 <span className="text-foreground">Creating Value</span>
               </h3>
               <p className="text-foreground mb-3 text-xs leading-relaxed text-center max-w-2xl mx-auto">
-                At BluBerry, we're committed to extending the lifecycle of quality items. By facilitating the resale of
-                used goods, we help reduce waste and environmental impact.
+                At BluBerry, we're committed to extending the lifecycle of
+                quality items. By facilitating the resale of used goods, we help
+                reduce waste and environmental impact.
               </p>
               <p className="text-foreground text-xs leading-relaxed text-center max-w-2xl mx-auto">
-                Every item we help sell is one less item in a landfill and one more opportunity to create value for both
-                sellers and future owners.
+                Every item we help sell is one less item in a landfill and one
+                more opportunity to create value for both sellers and future
+                owners.
               </p>
 
               <div className="mt-4 flex items-center justify-center">
@@ -446,7 +496,8 @@ export default function Home() {
                   <Leaf className="h-4 w-4 text-[#3B82F6]" />
                 </div>
                 <p className="text-xs text-muted-foreground italic">
-                  "Our mission is to create a more sustainable future through thoughtful commerce."
+                  "Our mission is to create a more sustainable future through
+                  thoughtful commerce."
                 </p>
               </div>
             </ContentAnimation>
@@ -464,7 +515,8 @@ export default function Home() {
               </span>
             </h2>
             <p className="text-muted-foreground mb-8 text-center max-w-2xl mx-auto text-sm">
-              <span className="font-medium">You submit once.</span> We handle the rest.
+              <span className="font-medium">You submit once.</span> We handle
+              the rest.
             </p>
           </ContentAnimation>
 
@@ -510,7 +562,9 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </div>
-                    <p className="text-xs ml-2 text-foreground">Professional Evaluation</p>
+                    <p className="text-xs ml-2 text-foreground">
+                      Professional Evaluation
+                    </p>
                   </div>
 
                   <div className="flex items-center">
@@ -528,7 +582,9 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </div>
-                    <p className="text-xs ml-2 text-foreground">Price Optimization</p>
+                    <p className="text-xs ml-2 text-foreground">
+                      Price Optimization
+                    </p>
                   </div>
 
                   <div className="flex items-center">
@@ -546,7 +602,9 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </div>
-                    <p className="text-xs ml-2 text-foreground">Marketplace Listings</p>
+                    <p className="text-xs ml-2 text-foreground">
+                      Marketplace Listings
+                    </p>
                   </div>
 
                   <div className="flex items-center">
@@ -564,7 +622,9 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </div>
-                    <p className="text-xs ml-2 text-foreground">Buyer Communication</p>
+                    <p className="text-xs ml-2 text-foreground">
+                      Buyer Communication
+                    </p>
                   </div>
 
                   <div className="flex items-center">
@@ -582,7 +642,9 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </div>
-                    <p className="text-xs ml-2 text-foreground">Shipping & Delivery</p>
+                    <p className="text-xs ml-2 text-foreground">
+                      Shipping & Delivery
+                    </p>
                   </div>
 
                   <div className="flex items-center">
@@ -600,7 +662,9 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </div>
-                    <p className="text-xs ml-2 text-foreground">Payment Processing</p>
+                    <p className="text-xs ml-2 text-foreground">
+                      Payment Processing
+                    </p>
                   </div>
 
                   <div className="flex items-center">
@@ -618,7 +682,9 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </div>
-                    <p className="text-xs ml-2 text-foreground">Customer Service</p>
+                    <p className="text-xs ml-2 text-foreground">
+                      Customer Service
+                    </p>
                   </div>
 
                   <div className="flex items-center">
@@ -636,7 +702,9 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </div>
-                    <p className="text-xs ml-2 text-foreground">Returns & Refunds</p>
+                    <p className="text-xs ml-2 text-foreground">
+                      Returns & Refunds
+                    </p>
                   </div>
                 </div>
               </div>
@@ -717,7 +785,9 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </div>
-                    <p className="text-xs ml-2 text-foreground">Write Description</p>
+                    <p className="text-xs ml-2 text-foreground">
+                      Write Description
+                    </p>
                   </div>
 
                   <div className="flex items-center">
@@ -735,7 +805,9 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </div>
-                    <p className="text-xs ml-2 text-foreground">Schedule Pickup</p>
+                    <p className="text-xs ml-2 text-foreground">
+                      Schedule Pickup
+                    </p>
                   </div>
 
                   <div className="flex items-center col-span-2 justify-center mt-4">
@@ -754,7 +826,9 @@ export default function Home() {
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                       </svg>
                     </div>
-                    <p className="text-xs ml-2 text-foreground font-medium">Everything Else</p>
+                    <p className="text-xs ml-2 text-foreground font-medium">
+                      Everything Else
+                    </p>
                   </div>
                 </div>
               </div>
@@ -773,7 +847,8 @@ export default function Home() {
               </span>
             </h2>
             <p className="text-muted-foreground mb-8 text-center max-w-2xl mx-auto text-sm">
-              Follow BluBerry on social media for updates, tips, and success stories
+              Follow BluBerry on social media for updates, tips, and success
+              stories
             </p>
           </ContentAnimation>
 
@@ -830,7 +905,9 @@ export default function Home() {
 
           <ContentAnimation delay={0.2}>
             <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">Have questions? We're here to help!</p>
+              <p className="text-sm text-muted-foreground mb-2">
+                Have questions? We're here to help!
+              </p>
               <div className="flex justify-center gap-4">
                 <Link
                   href="/contact"
@@ -856,20 +933,23 @@ export default function Home() {
           <ContentAnimation>
             <div className="bg-card p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:translate-y-[-2px] border border-border">
               <h2 className="text-2xl md:text-3xl font-light mb-2 tracking-wide text-center">
-                <span className="text-foreground font-medium">Ready to Sell?</span>
+                <span className="text-foreground font-medium">
+                  Ready to Sell?
+                </span>
               </h2>
               <p className="text-muted-foreground mb-4 max-w-xl mx-auto text-xs text-center">
-                Start the simple process today and turn your used items into cash with our professional service.
+                Start the simple process today and turn your used items into
+                cash with our professional service.
               </p>
               <div className="flex justify-center">
                 <div className="inline-block bg-gradient-to-r from-[#3B82F6] to-[#8A4FFF] p-[2px] rounded-lg">
-                  <Link
-                    href="/sell-multiple-items"
+                  <button
+                    onClick={navigateToSellItem}
                     className="inline-flex items-center bg-card hover:bg-secondary transition-colors px-4 py-2 rounded-lg font-medium text-foreground group text-sm"
                   >
                     Sell Your Item Now
                     <ArrowRight className="ml-2 h-3 w-3 transition-transform duration-300 group-hover:translate-x-1" />
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>
@@ -878,93 +958,95 @@ export default function Home() {
       </section>
 
       <style jsx global>{`
-       @keyframes shimmer {
-         0% {
-           transform: translateX(-100%);
-           opacity: 0;
-         }
-         10% {
-           opacity: 0.5;
-         }
-         50% {
-           opacity: 0.8;
-         }
-         90% {
-           opacity: 0.5;
-         }
-         100% {
-           transform: translateX(100%);
-           opacity: 0;
-         }
-       }
-       
-       .shimmer {
-         animation: shimmer 2.5s infinite;
-       }
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.5;
+          }
+          50% {
+            opacity: 0.8;
+          }
+          90% {
+            opacity: 0.5;
+          }
+          100% {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+        }
 
-       @keyframes shimmer-bg {
-         0% {
-           background-position: -200% 0;
-         }
-         100% {
-           background-position: 200% 0;
-         }
-       }
+        .shimmer {
+          animation: shimmer 2.5s infinite;
+        }
 
-       .bg-shimmer-gradient {
-         background: linear-gradient(
-           90deg,
-           transparent 0%,
-           rgba(59, 130, 246, 0.03) 25%,
-           rgba(140, 82, 255, 0.03) 50%,
-           rgba(59, 130, 246, 0.03) 75%,
-           transparent 100%
-         );
-         background-size: 200% 100%;
-       }
+        @keyframes shimmer-bg {
+          0% {
+            background-position: -200% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
 
-       .animate-shimmer-bg {
-         animation: shimmer-bg 8s ease-in-out infinite;
-       }
+        .bg-shimmer-gradient {
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(59, 130, 246, 0.03) 25%,
+            rgba(140, 82, 255, 0.03) 50%,
+            rgba(59, 130, 246, 0.03) 75%,
+            transparent 100%
+          );
+          background-size: 200% 100%;
+        }
 
-       @keyframes lineWipe {
-         0% {
-           transform: scaleX(0);
-           transform-origin: left;
-           opacity: 0.7;
-         }
-         100% {
-           transform: scaleX(1);
-           transform-origin: left;
-           opacity: 1;
-         }
-       }
-       
-       .animate-line-wipe {
-         animation: lineWipe 800ms cubic-bezier(0.25, 0.1, 0.25, 1.0) forwards;
-       }
+        .animate-shimmer-bg {
+          animation: shimmer-bg 8s ease-in-out infinite;
+        }
 
-       .content-animation-wrapper {
-         will-change: transform, opacity;
-       }
-       
-       .shadow-section {
-         box-shadow: 
-           0 -20px 25px -5px rgba(0, 0, 0, 0.1),
-           0 -10px 10px -5px rgba(0, 0, 0, 0.05);
-         transition: box-shadow 0.5s ease-out;
-       }
+        @keyframes lineWipe {
+          0% {
+            transform: scaleX(0);
+            transform-origin: left;
+            opacity: 0.7;
+          }
+          100% {
+            transform: scaleX(1);
+            transform-origin: left;
+            opacity: 1;
+          }
+        }
 
-       /* Add smooth transitions for all interactive elements */
-       a, button, .cursor-pointer {
-         transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1.0) !important;
-       }
+        .animate-line-wipe {
+          animation: lineWipe 800ms cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+        }
 
-       /* Smooth page transitions */
-       .page-transition-wrapper {
-         transition: opacity 0.3s ease-out;
-       }
-     `}</style>
+        .content-animation-wrapper {
+          will-change: transform, opacity;
+        }
+
+        .shadow-section {
+          box-shadow:
+            0 -20px 25px -5px rgba(0, 0, 0, 0.1),
+            0 -10px 10px -5px rgba(0, 0, 0, 0.05);
+          transition: box-shadow 0.5s ease-out;
+        }
+
+        /* Add smooth transitions for all interactive elements */
+        a,
+        button,
+        .cursor-pointer {
+          transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+        }
+
+        /* Smooth page transitions */
+        .page-transition-wrapper {
+          transition: opacity 0.3s ease-out;
+        }
+      `}</style>
     </div>
-  )
+  );
 }
