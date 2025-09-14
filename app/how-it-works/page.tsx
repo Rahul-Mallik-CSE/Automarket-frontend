@@ -29,26 +29,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/userAuth";
+import { useRequestServiceMutation } from "@/redux/features/serviceAPI";
 
 export default function HowItWorksPage() {
-  // const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
 
   const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
+  const [requestService, { isLoading: isSubmitting, error, isSuccess }] =
+    useRequestServiceMutation();
+
   const [formData, setFormData] = useState({
-    name: "",
+    full_name: "",
     email: "",
-    phone: "",
-    zipCode: "",
+    phone_number: "",
+    zip_code: "",
     city: "",
     state: "",
-    serviceType: "",
-    itemTypes: "",
-    estimatedValue: "",
-    timeframe: "",
-    additionalInfo: "",
+    service_type: "",
+    types_of_items: "",
+    estimated_total_value: "",
+    preferred_timeframe: "",
+    additional_information: "",
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
@@ -56,6 +59,11 @@ export default function HowItWorksPage() {
   };
 
   const handleRequestService = () => {
+    // if (isAuthenticated) {
+    //   setIsServiceFormOpen(true);
+    // } else {
+    //   router.push("/auth/sign-in");
+    // }
     setIsServiceFormOpen(true);
   };
 
@@ -71,35 +79,40 @@ export default function HowItWorksPage() {
 
   const handleServiceFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/send-service-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      // Clean the form data to only include the required fields in the exact format
+      const cleanFormData = {
+        full_name: formData.full_name,
+        email: formData.email,
+        phone_number: formData.phone_number,
+        city: formData.city,
+        state: formData.state,
+        zip_code: formData.zip_code,
+        service_type: formData.service_type,
+        types_of_items: formData.types_of_items,
+        estimated_total_value: formData.estimated_total_value,
+        preferred_timeframe: formData.preferred_timeframe,
+        additional_information: formData.additional_information,
+      };
 
-      if (response.ok) {
-        setIsSubmitted(true);
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          zipCode: "",
-          city: "",
-          state: "",
-          serviceType: "",
-          itemTypes: "",
-          estimatedValue: "",
-          timeframe: "",
-          additionalInfo: "",
-        });
-      }
+      await requestService(cleanFormData).unwrap();
+      setIsSubmitted(true);
+      setFormData({
+        full_name: "",
+        email: "",
+        phone_number: "",
+        zip_code: "",
+        city: "",
+        state: "",
+        service_type: "",
+        types_of_items: "",
+        estimated_total_value: "",
+        preferred_timeframe: "",
+        additional_information: "",
+      });
     } catch (error) {
       console.error("Error submitting service request:", error);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -109,7 +122,7 @@ export default function HowItWorksPage() {
       <section className="py-8 md:py-12 bg-gradient-to-br from-background via-background to-secondary/30">
         <div className="container mx-auto px-4 max-w-5xl">
           <ContentAnimation>
-            <h1 className="text-3xl md:text-5xl font-bold mb-4 text-center font-light tracking-tight">
+            <h1 className="text-3xl md:text-5xl font-bold mb-4 text-center tracking-tight">
               <span className="bg-gradient-to-r from-[#4361ee] via-[#7209b7] to-[#3a0ca3] bg-clip-text text-transparent">
                 How BluBerry Works
               </span>
@@ -527,6 +540,20 @@ export default function HowItWorksPage() {
                 </button>
               </div>
 
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-red-600 text-sm">
+                    {error &&
+                    "data" in error &&
+                    error.data &&
+                    typeof error.data === "object" &&
+                    "message" in error.data
+                      ? (error.data as any).message
+                      : "An error occurred while submitting your request. Please try again."}
+                  </p>
+                </div>
+              )}
+
               {!isSubmitted ? (
                 <form onSubmit={handleServiceFormSubmit} className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
@@ -535,9 +562,9 @@ export default function HowItWorksPage() {
                         Full Name *
                       </label>
                       <Input
-                        value={formData.name}
+                        value={formData.full_name}
                         onChange={(e) =>
-                          handleInputChange("name", e.target.value)
+                          handleInputChange("full_name", e.target.value)
                         }
                         required
                       />
@@ -564,9 +591,9 @@ export default function HowItWorksPage() {
                       </label>
                       <Input
                         type="tel"
-                        value={formData.phone}
+                        value={formData.phone_number}
                         onChange={(e) =>
-                          handleInputChange("phone", e.target.value)
+                          handleInputChange("phone_number", e.target.value)
                         }
                         required
                       />
@@ -598,56 +625,86 @@ export default function HowItWorksPage() {
                             <SelectValue placeholder="Select state" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="AL">Alabama</SelectItem>
-                            <SelectItem value="AK">Alaska</SelectItem>
-                            <SelectItem value="AZ">Arizona</SelectItem>
-                            <SelectItem value="AR">Arkansas</SelectItem>
-                            <SelectItem value="CA">California</SelectItem>
-                            <SelectItem value="CO">Colorado</SelectItem>
-                            <SelectItem value="CT">Connecticut</SelectItem>
-                            <SelectItem value="DE">Delaware</SelectItem>
-                            <SelectItem value="FL">Florida</SelectItem>
-                            <SelectItem value="GA">Georgia</SelectItem>
-                            <SelectItem value="HI">Hawaii</SelectItem>
-                            <SelectItem value="ID">Idaho</SelectItem>
-                            <SelectItem value="IL">Illinois</SelectItem>
-                            <SelectItem value="IN">Indiana</SelectItem>
-                            <SelectItem value="IA">Iowa</SelectItem>
-                            <SelectItem value="KS">Kansas</SelectItem>
-                            <SelectItem value="KY">Kentucky</SelectItem>
-                            <SelectItem value="LA">Louisiana</SelectItem>
-                            <SelectItem value="ME">Maine</SelectItem>
-                            <SelectItem value="MD">Maryland</SelectItem>
-                            <SelectItem value="MA">Massachusetts</SelectItem>
-                            <SelectItem value="MI">Michigan</SelectItem>
-                            <SelectItem value="MN">Minnesota</SelectItem>
-                            <SelectItem value="MS">Mississippi</SelectItem>
-                            <SelectItem value="MO">Missouri</SelectItem>
-                            <SelectItem value="MT">Montana</SelectItem>
-                            <SelectItem value="NE">Nebraska</SelectItem>
-                            <SelectItem value="NV">Nevada</SelectItem>
-                            <SelectItem value="NH">New Hampshire</SelectItem>
-                            <SelectItem value="NJ">New Jersey</SelectItem>
-                            <SelectItem value="NM">New Mexico</SelectItem>
-                            <SelectItem value="NY">New York</SelectItem>
-                            <SelectItem value="NC">North Carolina</SelectItem>
-                            <SelectItem value="ND">North Dakota</SelectItem>
-                            <SelectItem value="OH">Ohio</SelectItem>
-                            <SelectItem value="OK">Oklahoma</SelectItem>
-                            <SelectItem value="OR">Oregon</SelectItem>
-                            <SelectItem value="PA">Pennsylvania</SelectItem>
-                            <SelectItem value="RI">Rhode Island</SelectItem>
-                            <SelectItem value="SC">South Carolina</SelectItem>
-                            <SelectItem value="SD">South Dakota</SelectItem>
-                            <SelectItem value="TN">Tennessee</SelectItem>
-                            <SelectItem value="TX">Texas</SelectItem>
-                            <SelectItem value="UT">Utah</SelectItem>
-                            <SelectItem value="VT">Vermont</SelectItem>
-                            <SelectItem value="VA">Virginia</SelectItem>
-                            <SelectItem value="WA">Washington</SelectItem>
-                            <SelectItem value="WV">West Virginia</SelectItem>
-                            <SelectItem value="WI">Wisconsin</SelectItem>
-                            <SelectItem value="WY">Wyoming</SelectItem>
+                            <SelectItem value="Alabama">Alabama</SelectItem>
+                            <SelectItem value="Alaska">Alaska</SelectItem>
+                            <SelectItem value="Arizona">Arizona</SelectItem>
+                            <SelectItem value="Arkansas">Arkansas</SelectItem>
+                            <SelectItem value="California">
+                              California
+                            </SelectItem>
+                            <SelectItem value="Colorado">Colorado</SelectItem>
+                            <SelectItem value="Connecticut">
+                              Connecticut
+                            </SelectItem>
+                            <SelectItem value="Delaware">Delaware</SelectItem>
+                            <SelectItem value="Florida">Florida</SelectItem>
+                            <SelectItem value="Georgia">Georgia</SelectItem>
+                            <SelectItem value="Hawaii">Hawaii</SelectItem>
+                            <SelectItem value="Idaho">Idaho</SelectItem>
+                            <SelectItem value="Illinois">Illinois</SelectItem>
+                            <SelectItem value="Indiana">Indiana</SelectItem>
+                            <SelectItem value="Iowa">Iowa</SelectItem>
+                            <SelectItem value="Kansas">Kansas</SelectItem>
+                            <SelectItem value="Kentucky">Kentucky</SelectItem>
+                            <SelectItem value="Louisiana">Louisiana</SelectItem>
+                            <SelectItem value="Maine">Maine</SelectItem>
+                            <SelectItem value="Maryland">Maryland</SelectItem>
+                            <SelectItem value="Massachusetts">
+                              Massachusetts
+                            </SelectItem>
+                            <SelectItem value="Michigan">Michigan</SelectItem>
+                            <SelectItem value="Minnesota">Minnesota</SelectItem>
+                            <SelectItem value="Mississippi">
+                              Mississippi
+                            </SelectItem>
+                            <SelectItem value="Missouri">Missouri</SelectItem>
+                            <SelectItem value="Montana">Montana</SelectItem>
+                            <SelectItem value="Nebraska">Nebraska</SelectItem>
+                            <SelectItem value="Nevada">Nevada</SelectItem>
+                            <SelectItem value="New Hampshire">
+                              New Hampshire
+                            </SelectItem>
+                            <SelectItem value="New Jersey">
+                              New Jersey
+                            </SelectItem>
+                            <SelectItem value="New Mexico">
+                              New Mexico
+                            </SelectItem>
+                            <SelectItem value="New York">New York</SelectItem>
+                            <SelectItem value="North Carolina">
+                              North Carolina
+                            </SelectItem>
+                            <SelectItem value="North Dakota">
+                              North Dakota
+                            </SelectItem>
+                            <SelectItem value="Ohio">Ohio</SelectItem>
+                            <SelectItem value="Oklahoma">Oklahoma</SelectItem>
+                            <SelectItem value="Oregon">Oregon</SelectItem>
+                            <SelectItem value="Pennsylvania">
+                              Pennsylvania
+                            </SelectItem>
+                            <SelectItem value="Rhode Island">
+                              Rhode Island
+                            </SelectItem>
+                            <SelectItem value="South Carolina">
+                              South Carolina
+                            </SelectItem>
+                            <SelectItem value="South Dakota">
+                              South Dakota
+                            </SelectItem>
+                            <SelectItem value="Tennessee">Tennessee</SelectItem>
+                            <SelectItem value="Texas">Texas</SelectItem>
+                            <SelectItem value="Utah">Utah</SelectItem>
+                            <SelectItem value="Vermont">Vermont</SelectItem>
+                            <SelectItem value="Virginia">Virginia</SelectItem>
+                            <SelectItem value="Washington">
+                              Washington
+                            </SelectItem>
+                            <SelectItem value="West Virginia">
+                              West Virginia
+                            </SelectItem>
+                            <SelectItem value="Wisconsin">Wisconsin</SelectItem>
+                            <SelectItem value="Wyoming">Wyoming</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -656,9 +713,9 @@ export default function HowItWorksPage() {
                           ZIP Code *
                         </label>
                         <Input
-                          value={formData.zipCode}
+                          value={formData.zip_code}
                           onChange={(e) =>
-                            handleInputChange("zipCode", e.target.value)
+                            handleInputChange("zip_code", e.target.value)
                           }
                           placeholder="Enter ZIP code"
                           required
@@ -673,23 +730,25 @@ export default function HowItWorksPage() {
                     </label>
                     <Select
                       onValueChange={(value) =>
-                        handleInputChange("serviceType", value)
+                        handleInputChange("service_type", value)
                       }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select service type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pickup">
+                        <SelectItem value="Item Pickup & Sale">
                           Item Pickup & Sale
                         </SelectItem>
-                        <SelectItem value="evaluation">
+                        <SelectItem value="Item Evaluation Only">
                           Item Evaluation Only
                         </SelectItem>
-                        <SelectItem value="consultation">
+                        <SelectItem value="Selling Consultation">
                           Selling Consultation
                         </SelectItem>
-                        <SelectItem value="bulk">Bulk Item Sale</SelectItem>
+                        <SelectItem value="Bulk Item Sale">
+                          Bulk Item Sale
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -700,9 +759,9 @@ export default function HowItWorksPage() {
                     </label>
                     <Input
                       placeholder="e.g., furniture, electronics, appliances"
-                      value={formData.itemTypes}
+                      value={formData.types_of_items}
                       onChange={(e) =>
-                        handleInputChange("itemTypes", e.target.value)
+                        handleInputChange("types_of_items", e.target.value)
                       }
                     />
                   </div>
@@ -713,22 +772,24 @@ export default function HowItWorksPage() {
                     </label>
                     <Select
                       onValueChange={(value) =>
-                        handleInputChange("estimatedValue", value)
+                        handleInputChange("estimated_total_value", value)
                       }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select estimated value range" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="under-500">Under $500</SelectItem>
-                        <SelectItem value="500-1000">$500 - $1,000</SelectItem>
-                        <SelectItem value="1000-2500">
+                        <SelectItem value="Under $500">Under $500</SelectItem>
+                        <SelectItem value="$500 - $1,000">
+                          $500 - $1,000
+                        </SelectItem>
+                        <SelectItem value="$1,000 - $2,500">
                           $1,000 - $2,500
                         </SelectItem>
-                        <SelectItem value="2500-5000">
+                        <SelectItem value="$2,500 - $5,000">
                           $2,500 - $5,000
                         </SelectItem>
-                        <SelectItem value="over-5000">Over $5,000</SelectItem>
+                        <SelectItem value="Over $5,000">Over $5,000</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -739,19 +800,25 @@ export default function HowItWorksPage() {
                     </label>
                     <Select
                       onValueChange={(value) =>
-                        handleInputChange("timeframe", value)
+                        handleInputChange("preferred_timeframe", value)
                       }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="When would you like service?" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="asap">
+                        <SelectItem value="As soon as possible">
                           As soon as possible
                         </SelectItem>
-                        <SelectItem value="week">Within a week</SelectItem>
-                        <SelectItem value="month">Within a month</SelectItem>
-                        <SelectItem value="flexible">I'm flexible</SelectItem>
+                        <SelectItem value="Within a week">
+                          Within a week
+                        </SelectItem>
+                        <SelectItem value="Within a month">
+                          Within a month
+                        </SelectItem>
+                        <SelectItem value="I'm flexible">
+                          I'm flexible
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -762,9 +829,12 @@ export default function HowItWorksPage() {
                     </label>
                     <Textarea
                       placeholder="Tell us more about your items, special requirements, or questions..."
-                      value={formData.additionalInfo}
+                      value={formData.additional_information}
                       onChange={(e) =>
-                        handleInputChange("additionalInfo", e.target.value)
+                        handleInputChange(
+                          "additional_information",
+                          e.target.value
+                        )
                       }
                       rows={3}
                     />
