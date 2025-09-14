@@ -34,15 +34,15 @@ export default function Home() {
   const [showInitialLine, setShowInitialLine] = useState(true);
   const isMobile = useIsMobile();
   const [scrollY, setScrollY] = useState(0);
-  const { isAuthenticated } = useAuth();
+  // const { isAuthenticated } = useAuth();
 
   // Function to navigate to sell item page with smooth transition
   const navigateToSellItem = () => {
     // Check if user is authenticated
-    if (!isAuthenticated) {
-      router.push("/auth/sign-in");
-      return;
-    }
+    // if (!isAuthenticated) {
+    //   router.push("/auth/sign-in");
+    //   return;
+    // }
 
     // Add a subtle animation before navigation
     document.body.style.opacity = "0.9";

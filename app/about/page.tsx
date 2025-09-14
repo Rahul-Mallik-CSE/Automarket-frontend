@@ -14,11 +14,12 @@ export default function AboutPage() {
 
   const handleStartSelling = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isAuthenticated) {
-      router.push("/sell-multiple-items");
-    } else {
-      router.push("/auth/sign-in");
-    }
+    // if (isAuthenticated) {
+    //   router.push("/sell-multiple-items");
+    // } else {
+    //   router.push("/auth/sign-in");
+    // }
+    router.push("/sell-multiple-items");
   };
   return (
     <div className="bg-background">

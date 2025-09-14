@@ -31,7 +31,7 @@ import {
 import { useAuth } from "@/hooks/userAuth";
 
 export default function HowItWorksPage() {
-  const { isAuthenticated } = useAuth();
+  // const { isAuthenticated } = useAuth();
   const router = useRouter();
 
   const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
@@ -61,11 +61,12 @@ export default function HowItWorksPage() {
 
   const handleStartSelling = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isAuthenticated) {
-      router.push("/sell-multiple-items");
-    } else {
-      router.push("/auth/sign-in");
-    }
+    // if (isAuthenticated) {
+    //   router.push("/sell-multiple-items");
+    // } else {
+    //   router.push("/auth/sign-in");
+    // }
+    router.push("/sell-multiple-items");
   };
 
   const handleServiceFormSubmit = async (e: React.FormEvent) => {

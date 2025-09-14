@@ -29,7 +29,9 @@ const publicNavItems = [
   { href: "/about", label: "About" },
   { href: "/faq", label: "FAQ" },
   { href: "/how-it-works", label: "How It Works" },
+  { href: "/reviews", label: "Reviews" },
   { href: "/contact", label: "Contact" },
+  { href: "/sell-multiple-items", label: "Sell Your Item" },
 ];
 
 // Navigation items for authenticated users
@@ -75,16 +77,16 @@ export default function Navbar() {
   }, [pathname]);
 
   // Function to handle navigation for protected routes
-  const handleNavigation = (href: string, e: React.MouseEvent) => {
-    // Check if this is a protected route and user is not authenticated
-    const protectedRoutes = ["/sell-multiple-items", "/reviews"];
+  // const handleNavigation = (href: string, e: React.MouseEvent) => {
+  //   // Check if this is a protected route and user is not authenticated
+  //   const protectedRoutes = ["/sell-multiple-items", "/reviews"];
 
-    if (protectedRoutes.includes(href) && !isAuthenticated) {
-      e.preventDefault();
-      router.push("/auth/sign-in");
-      return;
-    }
-  };
+  //   if (protectedRoutes.includes(href) && !isAuthenticated) {
+  //     e.preventDefault();
+  //     router.push("/auth/sign-in");
+  //     return;
+  //   }
+  // };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -117,7 +119,7 @@ export default function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={(e) => handleNavigation(item.href, e)}
+                // onClick={(e) => handleNavigation(item.href, e)}
                 className={`px-3 py-2 text-sm rounded-md transition-colors hover:text-primary ${
                   pathname === item.href
                     ? "text-primary font-medium"
@@ -205,7 +207,7 @@ export default function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={(e) => handleNavigation(item.href, e)}
+                // onClick={(e) => handleNavigation(item.href, e)}
                 className={`px-3 py-2 text-sm rounded-md transition-colors hover:bg-muted text-center w-full ${
                   pathname === item.href
                     ? "text-primary font-medium"
