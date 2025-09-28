@@ -870,37 +870,132 @@ export default function AdminDashboard() {
                         {/* Actions */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex gap-2 flex-wrap">
-                            {product.actions.available_actions.map(
-                              (action, actionIndex) => (
+                            {/* Status-based action buttons */}
+                            {product.status.current === "PENDING" && (
+                              <>
                                 <button
-                                  key={actionIndex}
-                                  onClick={() => {
-                                    if (action.action === "list_ebay") {
-                                      listOnEbay(product.id);
-                                    } else if (
-                                      action.action === "unlist_ebay"
-                                    ) {
-                                      unlistFromEbay(product.id);
-                                    } else if (action.action === "approve") {
-                                      updateStatus(product.id, "approved");
-                                    } else if (action.action === "reject") {
-                                      updateStatus(product.id, "rejected");
-                                    }
-                                  }}
+                                  onClick={() =>
+                                    updateStatus(product.id, "approved")
+                                  }
                                   disabled={actionLoading === product.id}
-                                  className={`px-3 py-1 rounded text-xs font-medium disabled:opacity-50 ${action.button_class}`}
+                                  className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 disabled:opacity-50"
                                 >
-                                  {actionLoading === product.id &&
-                                  (action.action === "list_ebay" ||
-                                    action.action === "unlist_ebay" ||
-                                    action.action === "approve" ||
-                                    action.action === "reject")
+                                  {actionLoading === product.id
                                     ? "Loading..."
-                                    : action.label}
+                                    : "Approve"}
                                 </button>
-                              )
+                                <button
+                                  onClick={() =>
+                                    updateStatus(product.id, "rejected")
+                                  }
+                                  disabled={actionLoading === product.id}
+                                  className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 disabled:opacity-50"
+                                >
+                                  {actionLoading === product.id
+                                    ? "Loading..."
+                                    : "Reject"}
+                                </button>
+                              </>
                             )}
 
+                            {product.status.current === "REMOVED" && (
+                              <>
+                                <button
+                                  onClick={() =>
+                                    updateStatus(product.id, "approved")
+                                  }
+                                  disabled={actionLoading === product.id}
+                                  className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 disabled:opacity-50"
+                                >
+                                  {actionLoading === product.id
+                                    ? "Loading..."
+                                    : "Approve"}
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    updateStatus(product.id, "rejected")
+                                  }
+                                  disabled={actionLoading === product.id}
+                                  className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 disabled:opacity-50"
+                                >
+                                  {actionLoading === product.id
+                                    ? "Loading..."
+                                    : "Reject"}
+                                </button>
+                              </>
+                            )}
+
+                            {product.status.current === "APPROVED" && (
+                              <>
+                                <button
+                                  onClick={() => listOnEbay(product.id)}
+                                  disabled={actionLoading === product.id}
+                                  className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                  {actionLoading === product.id
+                                    ? "Loading..."
+                                    : "List on eBay"}
+                                </button>
+                                <button
+                                  disabled={true}
+                                  className="bg-purple-600 text-white px-3 py-1 rounded text-xs opacity-50 cursor-not-allowed"
+                                >
+                                  List on Amazon
+                                </button>
+                                <button
+                                  disabled={true}
+                                  className="bg-yellow-600 text-white px-3 py-1 rounded text-xs opacity-50 cursor-not-allowed"
+                                >
+                                  Edit Price
+                                </button>
+                              </>
+                            )}
+
+                            {product.status.current === "LISTED" && (
+                              <>
+                                <button
+                                  onClick={() => unlistFromEbay(product.id)}
+                                  disabled={actionLoading === product.id}
+                                  className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 disabled:opacity-50"
+                                >
+                                  {actionLoading === product.id
+                                    ? "Loading..."
+                                    : "Unlist"}
+                                </button>
+                                <button
+                                  disabled={true}
+                                  className="bg-blue-600 text-white px-3 py-1 rounded text-xs opacity-50 cursor-not-allowed"
+                                >
+                                  Listed on eBay
+                                </button>
+                                <button
+                                  disabled={true}
+                                  className="bg-purple-600 text-white px-3 py-1 rounded text-xs opacity-50 cursor-not-allowed"
+                                >
+                                  Listed on Amazon
+                                </button>
+                              </>
+                            )}
+
+                            {product.status.current === "EBAY_SOLD" && (
+                              <button
+                                disabled={true}
+                                className="bg-green-600 text-white px-3 py-1 rounded text-xs opacity-50 cursor-not-allowed"
+                              >
+                                Sold on eBay
+                              </button>
+                            )}
+
+                            {product.status.current === "AMAZON_SOLD" && (
+                              <button
+                                disabled={true}
+                                className="bg-green-600 text-white px-3 py-1 rounded text-xs opacity-50 cursor-not-allowed"
+                              >
+                                Sold on Amazon
+                              </button>
+                            )}
+
+                            {/* View Details button - always shown */}
                             <button
                               onClick={() => {
                                 setSelectedProduct(product);
@@ -908,7 +1003,7 @@ export default function AdminDashboard() {
                               }}
                               className="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700"
                             >
-                              View Details
+                              View
                             </button>
                           </div>
                         </td>
@@ -1214,35 +1309,141 @@ export default function AdminDashboard() {
 
             {/* Modal Actions */}
             <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
-              {selectedProduct.actions.available_actions.map(
-                (action, actionIndex) => (
+              {/* Status-based action buttons in modal */}
+              {selectedProduct.status.current === "PENDING" && (
+                <>
                   <button
-                    key={actionIndex}
                     onClick={() => {
-                      if (action.action === "list_ebay") {
-                        listOnEbay(selectedProduct.id);
-                      } else if (action.action === "unlist_ebay") {
-                        unlistFromEbay(selectedProduct.id);
-                      } else if (action.action === "approve") {
-                        updateStatus(selectedProduct.id, "approved");
-                      } else if (action.action === "reject") {
-                        updateStatus(selectedProduct.id, "rejected");
-                      }
+                      updateStatus(selectedProduct.id, "approved");
                       setSelectedProduct(null);
                     }}
                     disabled={actionLoading === selectedProduct.id}
-                    className={`px-4 py-2 rounded-lg font-medium disabled:opacity-50 transition-colors ${action.button_class}`}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
                   >
-                    {actionLoading === selectedProduct.id &&
-                    (action.action === "list_ebay" ||
-                      action.action === "unlist_ebay" ||
-                      action.action === "approve" ||
-                      action.action === "reject")
+                    {actionLoading === selectedProduct.id
                       ? "Processing..."
-                      : action.label}
+                      : "Approve"}
                   </button>
-                )
+                  <button
+                    onClick={() => {
+                      updateStatus(selectedProduct.id, "rejected");
+                      setSelectedProduct(null);
+                    }}
+                    disabled={actionLoading === selectedProduct.id}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    {actionLoading === selectedProduct.id
+                      ? "Processing..."
+                      : "Reject"}
+                  </button>
+                </>
               )}
+
+              {selectedProduct.status.current === "REMOVED" && (
+                <>
+                  <button
+                    onClick={() => {
+                      updateStatus(selectedProduct.id, "approved");
+                      setSelectedProduct(null);
+                    }}
+                    disabled={actionLoading === selectedProduct.id}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                  >
+                    {actionLoading === selectedProduct.id
+                      ? "Processing..."
+                      : "Approve"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      updateStatus(selectedProduct.id, "rejected");
+                      setSelectedProduct(null);
+                    }}
+                    disabled={actionLoading === selectedProduct.id}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    {actionLoading === selectedProduct.id
+                      ? "Processing..."
+                      : "Reject"}
+                  </button>
+                </>
+              )}
+
+              {selectedProduct.status.current === "APPROVED" && (
+                <>
+                  <button
+                    onClick={() => {
+                      listOnEbay(selectedProduct.id);
+                      setSelectedProduct(null);
+                    }}
+                    disabled={actionLoading === selectedProduct.id}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  >
+                    {actionLoading === selectedProduct.id
+                      ? "Processing..."
+                      : "List on eBay"}
+                  </button>
+                  <button
+                    disabled={true}
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg opacity-50 cursor-not-allowed transition-colors"
+                  >
+                    List on Amazon
+                  </button>
+                  <button
+                    disabled={true}
+                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg opacity-50 cursor-not-allowed transition-colors"
+                  >
+                    Edit Price
+                  </button>
+                </>
+              )}
+
+              {selectedProduct.status.current === "LISTED" && (
+                <>
+                  <button
+                    onClick={() => {
+                      unlistFromEbay(selectedProduct.id);
+                      setSelectedProduct(null);
+                    }}
+                    disabled={actionLoading === selectedProduct.id}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    {actionLoading === selectedProduct.id
+                      ? "Processing..."
+                      : "Unlist"}
+                  </button>
+                  <button
+                    disabled={true}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg opacity-50 cursor-not-allowed transition-colors"
+                  >
+                    Listed on eBay
+                  </button>
+                  <button
+                    disabled={true}
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg opacity-50 cursor-not-allowed transition-colors"
+                  >
+                    Listed on Amazon
+                  </button>
+                </>
+              )}
+
+              {selectedProduct.status.current === "EBAY_SOLD" && (
+                <button
+                  disabled={true}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg opacity-50 cursor-not-allowed transition-colors"
+                >
+                  Sold on eBay
+                </button>
+              )}
+
+              {selectedProduct.status.current === "AMAZON_SOLD" && (
+                <button
+                  disabled={true}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg opacity-50 cursor-not-allowed transition-colors"
+                >
+                  Sold on Amazon
+                </button>
+              )}
+
               <button
                 onClick={() => setSelectedProduct(null)}
                 className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
