@@ -31,6 +31,7 @@ export const baseApi = createApi({
     "Service",
     "SellItem",
     "AdminStats",
+    "AdminActivities",
   ],
   endpoints: () => ({}),
 });

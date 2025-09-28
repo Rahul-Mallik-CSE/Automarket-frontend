@@ -17,7 +17,11 @@ import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/userAuth";
-import { useGetDashboardStatsQuery } from "@/redux/features/adminAPI";
+import {
+  useGetDashboardStatsQuery,
+  useGetAdminActivitiesQuery,
+  type Product,
+} from "@/redux/features/adminAPI";
 
 // Simple types
 interface ItemSubmission {
@@ -163,8 +167,8 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [selectedItem, setSelectedItem] = useState<ItemSubmission | null>(null);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const { user, profile, logout } = useAuth();
@@ -175,6 +179,17 @@ export default function AdminDashboard() {
     isLoading: statsLoading,
     error: statsError,
   } = useGetDashboardStatsQuery();
+
+  // Fetch admin activities/products from API
+  const {
+    data: activitiesData,
+    isLoading: activitiesLoading,
+    error: activitiesError,
+    refetch: refetchActivities,
+  } = useGetAdminActivitiesQuery({
+    page: 1,
+    page_size: 20,
+  });
 
   // Check if we're in preview mode (no environment variables)
   useEffect(() => {
@@ -285,7 +300,7 @@ export default function AdminDashboard() {
 
   // Update submission status
   const updateStatus = async (
-    id: string,
+    id: number,
     newStatus: "pending" | "approved" | "rejected" | "listed"
   ) => {
     if (isPreviewMode) {
@@ -337,7 +352,7 @@ export default function AdminDashboard() {
   };
 
   // List item on eBay
-  const listOnEbay = async (id: string) => {
+  const listOnEbay = async (id: number) => {
     if (isPreviewMode) {
       // Demo mode - simulate listing
       setActionLoading(id);
@@ -402,7 +417,7 @@ export default function AdminDashboard() {
   };
 
   // Unlist item from eBay
-  const unlistFromEbay = async (id: string) => {
+  const unlistFromEbay = async (id: number) => {
     if (isPreviewMode) {
       // Demo mode - simulate unlisting
       setActionLoading(id);
@@ -542,120 +557,6 @@ export default function AdminDashboard() {
     );
   };
 
-  // Password protection screen (skip in preview mode)
-  if (!isAuthenticated && !isPreviewMode) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-blue-600 opacity-20"></div>
-        <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 w-full max-w-md border border-white/20">
-          <div className="text-center mb-8">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Admin Access
-            </h1>
-            <p className="text-gray-600">
-              Enter your password to access the dashboard
-            </p>
-          </div>
-          <form onSubmit={handlePasswordSubmit} className="space-y-6">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg
-                  className="h-5 w-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                  />
-                </svg>
-              </div>
-              <input
-                type="password"
-                placeholder="Enter admin password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 bg-gray-50/50 ${
-                  passwordError
-                    ? "border-red-400 bg-red-50/50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              />
-            </div>
-            {passwordError && (
-              <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
-                <svg
-                  className="w-5 h-5 flex-shrink-0"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span className="text-sm font-medium">
-                  Incorrect password. Please try again.
-                </span>
-              </div>
-            )}
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-            >
-              <span className="flex items-center justify-center space-x-2">
-                <span>Access Dashboard</span>
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                  />
-                </svg>
-              </span>
-            </button>
-          </form>
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
-              Secure admin portal • Protected access
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-900">
       {/* Header */}
@@ -674,14 +575,7 @@ export default function AdminDashboard() {
               {dashboardStats?.total_products || submissions.length} total
               submissions
             </span>
-            {/* {!isPreviewMode && (
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Logout
-              </button>
-            )} */}
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -724,39 +618,6 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <main className="p-6">
-        {/* Preview Mode Notice */}
-        {isPreviewMode && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-blue-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-800">
-                  Preview Mode Active
-                </h3>
-                <div className="mt-2 text-sm text-blue-700">
-                  <p>
-                    You're viewing demo data with multiple images per listing.
-                    In production, this would connect to your Supabase database
-                    and display all uploaded photos.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           {statsLoading ? (
@@ -836,27 +697,28 @@ export default function AdminDashboard() {
         {/* Submissions Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold">Item Submissions</h2>
+            <h2 className="text-lg font-semibold">Product Submissions</h2>
           </div>
 
-          {loading ? (
+          {activitiesLoading ? (
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-gray-600">Loading submissions...</p>
+              <p className="mt-2 text-gray-600">Loading products...</p>
             </div>
-          ) : error ? (
+          ) : activitiesError ? (
             <div className="p-8 text-center">
-              <p className="text-red-600">Error: {error}</p>
+              <p className="text-red-600">Error loading products</p>
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => refetchActivities()}
                 className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
               >
                 Retry
               </button>
             </div>
-          ) : submissions.length === 0 ? (
+          ) : !activitiesData?.data?.products ||
+            activitiesData.data.products.length === 0 ? (
             <div className="p-8 text-center text-gray-600">
-              No submissions found
+              No products found
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -864,7 +726,7 @@ export default function AdminDashboard() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      All Images
+                      Primary Image
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Item
@@ -873,7 +735,7 @@ export default function AdminDashboard() {
                       Customer
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      eBay Status
+                      Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Price
@@ -887,149 +749,166 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {submissions.map((item) => {
-                    const imageCount = getImageCount(item.image_url);
-                    return (
-                      <tr key={item.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex gap-2 overflow-x-auto max-w-xs">
-                            {(() => {
-                              const images = parseImageUrls(item.image_url);
-                              if (images.length === 0) {
-                                return (
-                                  <Image
-                                    src="/placeholder.svg?height=60&width=60&text=No+Image"
-                                    alt="No image"
-                                    width={60}
-                                    height={60}
-                                    className="rounded-lg object-cover flex-shrink-0"
-                                  />
-                                );
-                              }
+                  {activitiesData.data.products.map((product) => {
+                    // Get primary image
+                    const primaryImage =
+                      product.item.images.find((img) => img.is_primary) ||
+                      product.item.images[0];
 
-                              return images.map((imageUrl, index) => (
-                                <div
-                                  key={index}
-                                  className="relative flex-shrink-0"
-                                >
-                                  <Image
-                                    src={imageUrl || "/placeholder.svg"}
-                                    alt={`${item.item_name} - Image ${index + 1}`}
-                                    width={60}
-                                    height={60}
-                                    className="rounded-lg object-cover"
-                                    onError={(e) => {
-                                      e.currentTarget.src =
-                                        "/placeholder.svg?height=60&width=60&text=Error";
-                                    }}
-                                  />
-                                  {index === 0 && images.length > 1 && (
-                                    <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                                      {images.length}
-                                    </div>
-                                  )}
-                                </div>
-                              ));
-                            })()}
+                    return (
+                      <tr key={product.id} className="hover:bg-gray-50">
+                        {/* Primary Image */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="relative">
+                            <img
+                              src={
+                                primaryImage?.url ||
+                                "/placeholder.svg?height=80&width=80&text=No+Image"
+                              }
+                              alt={product.item.title}
+                              className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                              onError={(e) => {
+                                e.currentTarget.src =
+                                  "/placeholder.svg?height=80&width=80&text=Error";
+                              }}
+                            />
+                            {product.item.images.length > 1 && (
+                              <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
+                                {product.item.images.length}
+                              </span>
+                            )}
                           </div>
                         </td>
+                        {/* Item Info */}
                         <td className="px-6 py-4">
                           <div className="max-w-xs">
-                            <p className="font-medium text-gray-900 truncate">
-                              {item.item_name}
-                            </p>
-                            <p className="text-sm text-gray-500 truncate">
-                              {item.item_condition}
-                            </p>
-                            {item.item_issues && (
-                              <p className="text-xs text-red-600 truncate">
-                                Issues: {item.item_issues}
-                              </p>
-                            )}
+                            <div className="text-sm font-medium text-gray-900 truncate">
+                              {product.item.title}
+                            </div>
+                            <div className="text-sm text-gray-500 truncate mt-1">
+                              {product.item.description.length > 50
+                                ? product.item.description.substring(0, 50) +
+                                  "..."
+                                : product.item.description}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              Condition: {product.item.condition}
+                            </div>
+                            {product.item.defects &&
+                              product.item.defects !== "None" && (
+                                <div className="text-xs text-red-600 mt-1 truncate">
+                                  Issues: {product.item.defects}
+                                </div>
+                              )}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {item.full_name}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {item.email}
-                            </p>
+
+                        {/* Customer Info */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {product.customer.name}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {product.customer.email}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {product.customer.phone}
                           </div>
                         </td>
+
+                        {/* Status */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getEbayStatusStyle(item.ebay_status)}`}
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
+                              product.status.current === "PENDING"
+                                ? "bg-yellow-100 text-yellow-800 border-yellow-300"
+                                : product.status.current === "APPROVED"
+                                  ? "bg-green-100 text-green-800 border-green-300"
+                                  : product.status.current === "LISTED"
+                                    ? "bg-blue-100 text-blue-800 border-blue-300"
+                                    : product.status.current === "EBAY_SOLD" ||
+                                        product.status.current === "AMAZON_SOLD"
+                                      ? "bg-purple-100 text-purple-800 border-purple-300"
+                                      : "bg-gray-100 text-gray-800 border-gray-300"
+                            }`}
                           >
-                            {getEbayStatusDisplay(item)}
+                            {product.status.display}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {item.estimated_price
-                            ? `$${item.estimated_price.toLocaleString()}`
-                            : "—"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(item.submission_date).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex gap-2">
-                            {isListedOnEbay(item) ? (
-                              <div className="flex gap-2">
-                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 border border-green-300">
-                                  Listed on eBay
-                                </span>
-                                <button
-                                  onClick={() => unlistFromEbay(item.id)}
-                                  disabled={actionLoading === item.id}
-                                  className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 disabled:opacity-50"
-                                >
-                                  {actionLoading === item.id
-                                    ? "Unlisting..."
-                                    : "Unlist"}
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => listOnEbay(item.id)}
-                                disabled={actionLoading === item.id}
-                                className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 disabled:opacity-50"
-                              >
-                                {actionLoading === item.id
-                                  ? "Listing..."
-                                  : "List on eBay"}
-                              </button>
-                            )}
 
-                            {item.status === "pending" && (
-                              <>
+                        {/* Price */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            ${product.price.estimated_value.toFixed(2)}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Range: ${product.price.min_range.toFixed(2)} - $
+                            {product.price.max_range.toFixed(2)}
+                          </div>
+                          {product.price.final_listing_price && (
+                            <div className="text-xs text-blue-600">
+                              Listed: $
+                              {product.price.final_listing_price.toFixed(2)}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Date */}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div>
+                            {new Date(
+                              product.date.created_at
+                            ).toLocaleDateString()}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            Pickup:{" "}
+                            {new Date(
+                              product.customer.pickup_date
+                            ).toLocaleDateString()}
+                          </div>
+                        </td>
+                        {/* Actions */}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex gap-2 flex-wrap">
+                            {product.actions.available_actions.map(
+                              (action, actionIndex) => (
                                 <button
-                                  onClick={() =>
-                                    updateStatus(item.id, "approved")
-                                  }
-                                  disabled={actionLoading === item.id}
-                                  className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 disabled:opacity-50"
+                                  key={actionIndex}
+                                  onClick={() => {
+                                    if (action.action === "list_ebay") {
+                                      listOnEbay(product.id);
+                                    } else if (
+                                      action.action === "unlist_ebay"
+                                    ) {
+                                      unlistFromEbay(product.id);
+                                    } else if (action.action === "approve") {
+                                      updateStatus(product.id, "approved");
+                                    } else if (action.action === "reject") {
+                                      updateStatus(product.id, "rejected");
+                                    }
+                                  }}
+                                  disabled={actionLoading === product.id}
+                                  className={`px-3 py-1 rounded text-xs font-medium disabled:opacity-50 ${action.button_class}`}
                                 >
-                                  Approve
+                                  {actionLoading === product.id &&
+                                  (action.action === "list_ebay" ||
+                                    action.action === "unlist_ebay" ||
+                                    action.action === "approve" ||
+                                    action.action === "reject")
+                                    ? "Loading..."
+                                    : action.label}
                                 </button>
-                                <button
-                                  onClick={() =>
-                                    updateStatus(item.id, "rejected")
-                                  }
-                                  disabled={actionLoading === item.id}
-                                  className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 disabled:opacity-50"
-                                >
-                                  Reject
-                                </button>
-                              </>
+                              )
                             )}
 
                             <button
-                              onClick={() => setSelectedItem(item)}
+                              onClick={() => {
+                                setSelectedProduct(product);
+                                setSelectedImageIndex(0); // Reset to first image
+                              }}
                               className="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700"
                             >
-                              View
+                              View Details
                             </button>
                           </div>
                         </td>
@@ -1043,17 +922,17 @@ export default function AdminDashboard() {
         </div>
       </main>
 
-      {/* Item Details Modal with Image Gallery */}
-      {selectedItem && (
+      {/* Product Details Modal with Image Gallery */}
+      {selectedProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-start">
                 <h3 className="text-lg font-semibold">
-                  {selectedItem.item_name}
+                  {selectedProduct.item.title}
                 </h3>
                 <button
-                  onClick={() => setSelectedItem(null)}
+                  onClick={() => setSelectedProduct(null)}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <svg
@@ -1078,12 +957,12 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   {(() => {
-                    const images = parseImageUrls(selectedItem.image_url);
+                    const images = selectedProduct.item.images || [];
                     if (images.length === 0) {
                       return (
                         <Image
                           src="/placeholder.svg?height=400&width=400&text=No+Image"
-                          alt={selectedItem.item_name}
+                          alt={selectedProduct.item.title}
                           width={400}
                           height={400}
                           className="rounded-lg object-cover w-full"
@@ -1091,15 +970,23 @@ export default function AdminDashboard() {
                       );
                     }
 
+                    // Sort images by order, with primary image first if no order specified
+                    const sortedImages = [...images].sort((a, b) => {
+                      if (a.is_primary && !b.is_primary) return -1;
+                      if (!a.is_primary && b.is_primary) return 1;
+                      return a.order - b.order;
+                    });
+
                     return (
                       <>
                         {/* Main Image */}
                         <div className="relative">
                           <Image
                             src={
-                              images[selectedImageIndex] || "/placeholder.svg"
+                              sortedImages[selectedImageIndex]?.url ||
+                              "/placeholder.svg"
                             }
-                            alt={`${selectedItem.item_name} - Image ${selectedImageIndex + 1}`}
+                            alt={`${selectedProduct.item.title} - Image ${selectedImageIndex + 1}`}
                             width={400}
                             height={400}
                             className="rounded-lg object-cover w-full h-80"
@@ -1108,29 +995,84 @@ export default function AdminDashboard() {
                                 "/placeholder.svg?height=400&width=400&text=Image+Error";
                             }}
                           />
-                          {images.length > 1 && (
+                          {sortedImages.length > 1 && (
                             <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
-                              {selectedImageIndex + 1} / {images.length}
+                              {selectedImageIndex + 1} / {sortedImages.length}
                             </div>
+                          )}
+
+                          {/* Navigation Arrows */}
+                          {sortedImages.length > 1 && (
+                            <>
+                              <button
+                                onClick={() =>
+                                  setSelectedImageIndex(
+                                    selectedImageIndex === 0
+                                      ? sortedImages.length - 1
+                                      : selectedImageIndex - 1
+                                  )
+                                }
+                                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M15 19l-7-7 7-7"
+                                  />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() =>
+                                  setSelectedImageIndex(
+                                    selectedImageIndex ===
+                                      sortedImages.length - 1
+                                      ? 0
+                                      : selectedImageIndex + 1
+                                  )
+                                }
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 5l7 7-7 7"
+                                  />
+                                </svg>
+                              </button>
+                            </>
                           )}
                         </div>
 
                         {/* Image Thumbnails */}
-                        {images.length > 1 && (
+                        {sortedImages.length > 1 && (
                           <div className="flex gap-2 overflow-x-auto pb-2">
-                            {images.map((image, index) => (
+                            {sortedImages.map((imageObj, index) => (
                               <button
-                                key={index}
+                                key={imageObj.id}
                                 onClick={() => setSelectedImageIndex(index)}
-                                className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
+                                className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all relative ${
                                   selectedImageIndex === index
                                     ? "border-blue-500 ring-2 ring-blue-200"
                                     : "border-gray-200 hover:border-gray-300"
                                 }`}
                               >
                                 <Image
-                                  src={image || "/placeholder.svg"}
-                                  alt={`${selectedItem.item_name} - Thumbnail ${index + 1}`}
+                                  src={imageObj.url || "/placeholder.svg"}
+                                  alt={`${selectedProduct.item.title} - Thumbnail ${index + 1}`}
                                   width={80}
                                   height={80}
                                   className="object-cover w-20 h-20"
@@ -1139,6 +1081,11 @@ export default function AdminDashboard() {
                                       "/placeholder.svg?height=80&width=80&text=Error";
                                   }}
                                 />
+                                {imageObj.is_primary && (
+                                  <div className="absolute top-1 right-1 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                    ★
+                                  </div>
+                                )}
                               </button>
                             ))}
                           </div>
@@ -1157,24 +1104,26 @@ export default function AdminDashboard() {
                     <div className="bg-gray-50 p-3 rounded-lg space-y-1">
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">Name:</span>{" "}
-                        {selectedItem.full_name}
+                        {selectedProduct.customer.name}
                       </p>
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">Email:</span>{" "}
-                        {selectedItem.email}
+                        {selectedProduct.customer.email}
                       </p>
-                      {selectedItem.phone && (
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium">Phone:</span>{" "}
-                          {selectedItem.phone}
-                        </p>
-                      )}
-                      {selectedItem.address && (
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium">Address:</span>{" "}
-                          {selectedItem.address}
-                        </p>
-                      )}
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Phone:</span>{" "}
+                        {selectedProduct.customer.phone}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Address:</span>{" "}
+                        {selectedProduct.customer.pickup_address}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Pickup Date:</span>{" "}
+                        {new Date(
+                          selectedProduct.customer.pickup_date
+                        ).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
 
@@ -1184,45 +1133,60 @@ export default function AdminDashboard() {
                     </h4>
                     <div className="bg-gray-50 p-3 rounded-lg space-y-1">
                       <p className="text-sm text-gray-600">
+                        <span className="font-medium">Title:</span>{" "}
+                        {selectedProduct.item.title}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Description:</span>{" "}
+                        {selectedProduct.item.description}
+                      </p>
+                      <p className="text-sm text-gray-600">
                         <span className="font-medium">Condition:</span>{" "}
-                        {selectedItem.item_condition}
+                        {selectedProduct.item.condition}
                       </p>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Price:</span>{" "}
-                        {selectedItem.estimated_price
-                          ? `$${selectedItem.estimated_price.toLocaleString()}`
-                          : "Not estimated"}
+                        <span className="font-medium">Defects:</span>{" "}
+                        {selectedProduct.item.defects || "None reported"}
                       </p>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">eBay Status:</span>{" "}
-                        {getEbayStatusDisplay(selectedItem)}
+                        <span className="font-medium">Estimated Price:</span> $
+                        {selectedProduct.price.estimated_value.toFixed(2)}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Price Range:</span> $
+                        {selectedProduct.price.min_range.toFixed(2)} - $
+                        {selectedProduct.price.max_range.toFixed(2)}
+                      </p>
+                      {selectedProduct.price.final_listing_price && (
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Listed Price:</span> $
+                          {selectedProduct.price.final_listing_price.toFixed(2)}
+                        </p>
+                      )}
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Status:</span>{" "}
+                        {selectedProduct.status.display}
                       </p>
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">Images:</span>{" "}
-                        {getImageCount(selectedItem.image_url)} photo(s)
+                        {selectedProduct.item.images?.length || 0} photo(s)
                       </p>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Submitted:</span>{" "}
+                        <span className="font-medium">Created:</span>{" "}
                         {new Date(
-                          selectedItem.submission_date
+                          selectedProduct.date.created_at
+                        ).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Updated:</span>{" "}
+                        {new Date(
+                          selectedProduct.date.updated_at
                         ).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
 
-                  {selectedItem.ebay_listing_id && (
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">
-                        eBay Information
-                      </h4>
-                      <div className="bg-blue-50 p-3 rounded-lg">
-                        <p className="text-sm text-blue-800">
-                          <span className="font-medium">Listing ID:</span>{" "}
-                          {selectedItem.ebay_listing_id}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                  {/* eBay listing info could be added here if available in API response */}
                 </div>
               </div>
 
@@ -1230,59 +1194,57 @@ export default function AdminDashboard() {
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">Description</h4>
                 <p className="text-sm text-gray-600 whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
-                  {selectedItem.item_description}
+                  {selectedProduct.item.description}
                 </p>
               </div>
 
               {/* Issues */}
-              {selectedItem.item_issues && (
-                <div>
-                  <h4 className="font-medium text-red-900 mb-2">
-                    Known Issues
-                  </h4>
-                  <p className="text-sm text-red-600 whitespace-pre-wrap bg-red-50 p-4 rounded-lg border border-red-200">
-                    {selectedItem.item_issues}
-                  </p>
-                </div>
-              )}
+              {selectedProduct.item.defects &&
+                selectedProduct.item.defects !== "None" && (
+                  <div>
+                    <h4 className="font-medium text-red-900 mb-2">
+                      Known Issues
+                    </h4>
+                    <p className="text-sm text-red-600 whitespace-pre-wrap bg-red-50 p-4 rounded-lg border border-red-200">
+                      {selectedProduct.item.defects}
+                    </p>
+                  </div>
+                )}
             </div>
 
             {/* Modal Actions */}
             <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
-              {isListedOnEbay(selectedItem) ? (
-                <div className="flex gap-3">
-                  <span className="inline-flex px-4 py-2 text-sm font-semibold rounded-lg bg-green-100 text-green-800 border border-green-300">
-                    Listed on eBay
-                  </span>
+              {selectedProduct.actions.available_actions.map(
+                (action, actionIndex) => (
                   <button
+                    key={actionIndex}
                     onClick={() => {
-                      unlistFromEbay(selectedItem.id);
-                      setSelectedItem(null);
+                      if (action.action === "list_ebay") {
+                        listOnEbay(selectedProduct.id);
+                      } else if (action.action === "unlist_ebay") {
+                        unlistFromEbay(selectedProduct.id);
+                      } else if (action.action === "approve") {
+                        updateStatus(selectedProduct.id, "approved");
+                      } else if (action.action === "reject") {
+                        updateStatus(selectedProduct.id, "rejected");
+                      }
+                      setSelectedProduct(null);
                     }}
-                    disabled={actionLoading === selectedItem.id}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                    disabled={actionLoading === selectedProduct.id}
+                    className={`px-4 py-2 rounded-lg font-medium disabled:opacity-50 transition-colors ${action.button_class}`}
                   >
-                    {actionLoading === selectedItem.id
-                      ? "Unlisting..."
-                      : "Unlist from eBay"}
+                    {actionLoading === selectedProduct.id &&
+                    (action.action === "list_ebay" ||
+                      action.action === "unlist_ebay" ||
+                      action.action === "approve" ||
+                      action.action === "reject")
+                      ? "Processing..."
+                      : action.label}
                   </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    listOnEbay(selectedItem.id);
-                    setSelectedItem(null);
-                  }}
-                  disabled={actionLoading === selectedItem.id}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                >
-                  {actionLoading === selectedItem.id
-                    ? "Listing..."
-                    : "List on eBay"}
-                </button>
+                )
               )}
               <button
-                onClick={() => setSelectedItem(null)}
+                onClick={() => setSelectedProduct(null)}
                 className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
               >
                 Close
