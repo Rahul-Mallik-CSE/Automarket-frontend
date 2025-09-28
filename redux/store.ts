@@ -7,6 +7,7 @@ import { publicApi } from "./features/sellitemAPI";
 
 // Import API endpoints to ensure they're registered
 import "./features/sellitemAPI";
+import "./features/adminAPI";
 
 export const store = configureStore({
   reducer: {

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/userAuth";
+import { useGetDashboardStatsQuery } from "@/redux/features/adminAPI";
 
 // Simple types
 interface ItemSubmission {
@@ -167,6 +168,13 @@ export default function AdminDashboard() {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const { user, profile, logout } = useAuth();
+
+  // Fetch dashboard stats from API
+  const {
+    data: dashboardStats,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useGetDashboardStatsQuery();
 
   // Check if we're in preview mode (no environment variables)
   useEffect(() => {
@@ -663,7 +671,8 @@ export default function AdminDashboard() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-gray-300 text-sm">
-              {submissions.length} total submissions
+              {dashboardStats?.total_products || submissions.length} total
+              submissions
             </span>
             {/* {!isPreviewMode && (
               <button
@@ -704,9 +713,6 @@ export default function AdminDashboard() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href="/auth/sign-in">Sign In</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/auth/sign-up">Sign Up</Link>
                     </DropdownMenuItem>
                   </>
                 )}
@@ -753,43 +759,78 @@ export default function AdminDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          {[
-            { label: "Total", count: submissions.length, color: "bg-blue-600" },
-            {
-              label: "Pending Review",
-              count: submissions.filter((s) => s.status === "pending").length,
-              color: "bg-yellow-600",
-            },
-            {
-              label: "Approved",
-              count: submissions.filter((s) => s.status === "approved").length,
-              color: "bg-green-600",
-            },
-            {
-              label: "Listed on eBay",
-              count: submissions.filter((s) => isListedOnEbay(s)).length,
-              color: "bg-purple-600",
-            },
-            {
-              label: "Not Listed",
-              count: submissions.filter((s) => !isListedOnEbay(s)).length,
-              color: "bg-gray-600",
-            },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className={`${stat.color} rounded-full p-3 mr-4`}>
-                  <div className="w-6 h-6 text-white font-bold flex items-center justify-center">
-                    {stat.count}
+          {statsLoading ? (
+            // Loading skeleton for stats
+            Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center">
+                  <div className="bg-gray-300 rounded-full p-3 mr-4 animate-pulse">
+                    <div className="w-6 h-6"></div>
+                  </div>
+                  <div>
+                    <div className="bg-gray-300 h-4 w-20 rounded animate-pulse mb-2"></div>
+                    <div className="bg-gray-300 h-6 w-12 rounded animate-pulse"></div>
                   </div>
                 </div>
-                <div>
-                  <p className="text-gray-600 text-sm">{stat.label}</p>
-                  <p className="text-2xl font-bold">{stat.count}</p>
+              </div>
+            ))
+          ) : statsError ? (
+            // Error state
+            <div className="col-span-5 bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-600">Failed to load dashboard stats</p>
+            </div>
+          ) : (
+            // Real stats data or fallback to demo data
+            [
+              {
+                label: "Total Products",
+                count: dashboardStats?.total_products || submissions.length,
+                color: "bg-blue-600",
+              },
+              {
+                label: "Pending Review",
+                count:
+                  dashboardStats?.pending_products ||
+                  submissions.filter((s) => s.status === "pending").length,
+                color: "bg-yellow-600",
+              },
+              {
+                label: "Approved",
+                count:
+                  dashboardStats?.approved_products ||
+                  submissions.filter((s) => s.status === "approved").length,
+                color: "bg-green-600",
+              },
+              {
+                label: "Listed Products",
+                count:
+                  dashboardStats?.listed_products ||
+                  submissions.filter((s) => isListedOnEbay(s)).length,
+                color: "bg-purple-600",
+              },
+              {
+                label: "Not Listed",
+                count:
+                  dashboardStats?.not_listed_products ||
+                  submissions.filter((s) => !isListedOnEbay(s)).length,
+                color: "bg-gray-600",
+              },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center">
+                  <div className={`${stat.color} rounded-full p-3 mr-4`}>
+                    <div className="w-6 h-6 text-white font-bold flex items-center justify-center">
+                      {stat.count}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 text-sm">{stat.label}</p>
+                    <p className="text-2xl font-bold">{stat.count}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Submissions Table */}
