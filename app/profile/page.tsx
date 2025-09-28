@@ -29,8 +29,10 @@ import {
   Camera,
   CheckCircle,
   AlertCircle,
+  ArrowLeft,
 } from "lucide-react";
 import { format } from "date-fns";
+import Link from "next/link";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -179,6 +181,13 @@ export default function ProfilePage() {
 
   return (
     <div className="container py-10 max-w-4xl mx-auto">
+      <Link
+        href="/admin"
+        className="flex flex-row items-center text-xl mb-4 text-black hover:text-primary transition-colors"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Go back to admin
+      </Link>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Your Profile</h1>
         {!isEditing ? (

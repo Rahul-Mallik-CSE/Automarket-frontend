@@ -32,6 +32,8 @@ import {
   LinkIcon,
   ExternalLink,
   ShoppingCart,
+  Calculator,
+  RefreshCw,
 } from "lucide-react";
 import ContentAnimation from "@/components/content-animation";
 import { useToast } from "@/hooks/use-toast";
@@ -51,7 +53,10 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSubmitItemsMutation } from "@/redux/features/sellitemAPI";
+import {
+  useGetItemEstimatesMutation,
+  useSubmitContactInfoMutation,
+} from "@/redux/features/sellitemAPI";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -104,8 +109,12 @@ interface SubmitResult {
 
 export default function SellMultipleItemsForm() {
   const { toast } = useToast();
-  const [submitItems, { isLoading: isSubmittingAPI, error: submitError }] =
-    useSubmitItemsMutation();
+  const [getItemEstimates, { isLoading: isCalculatingPrices }] =
+    useGetItemEstimatesMutation();
+  const [
+    submitContactInfo,
+    { isLoading: isSubmittingAPI, error: submitError },
+  ] = useSubmitContactInfoMutation();
 
   // Form states
   const [formStep, setFormStep] = useState(1);
@@ -124,6 +133,8 @@ export default function SellMultipleItemsForm() {
 
   // Price estimates state
   const [priceEstimates, setPriceEstimates] = useState<Record<number, any>>({});
+  const [estimateResponse, setEstimateResponse] = useState<any>(null);
+  const [tempProductIds, setTempProductIds] = useState<number[]>([]);
 
   // Items state
   const [items, setItems] = useState<FormItem[]>([
@@ -407,34 +418,99 @@ export default function SellMultipleItemsForm() {
     setStep1Valid(allItemsValid);
   }, [items, validateItem]);
 
-  // Get price estimate for an item
-  const getPriceEstimate = useCallback(
-    async (itemIndex: number) => {
-      const item = items[itemIndex];
-      if (!item?.name || !item?.description) return;
+  // Calculate price estimates for all items
+  const calculatePriceEstimates = useCallback(async () => {
+    // Validate that we have at least one item with required fields
+    const validItems = items.filter(
+      (item) =>
+        item.name?.trim() &&
+        item.description?.trim() &&
+        item.description.trim().length >= 10 &&
+        item.condition &&
+        item.issues?.trim() &&
+        item.photos?.length > 0
+    );
 
-      try {
-        // This would call the actual price estimation API
-        // For now, we'll just set a placeholder
-        const estimate = {
-          price: "$25-50",
-          minPrice: 25,
-          maxPrice: 50,
-          source: "ebay_fallback",
-          confidence: "medium",
-          referenceCount: 5,
+    if (validItems.length === 0) {
+      toast({
+        title: "Validation Error",
+        description:
+          "Please complete all item details before calculating prices.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Prepare items data for price estimation
+      const estimateItems = await Promise.all(
+        validItems.map(async (item) => {
+          const uploaded_images: string[] = [];
+
+          // Convert photos to base64 strings array
+          for (const photo of item.photos || []) {
+            if (photo.base64) {
+              uploaded_images.push(photo.base64);
+            }
+          }
+
+          return {
+            title: item.name || "",
+            description: item.description || "",
+            condition: mapConditionForApi(item.condition),
+            defects: item.issues || "No issues reported",
+            uploaded_images,
+          };
+        })
+      );
+
+      const estimateRequest = {
+        items: estimateItems,
+      };
+
+      console.log("Requesting price estimates:", estimateRequest);
+
+      // Call the price estimation API
+      const result = await getItemEstimates(estimateRequest).unwrap();
+
+      console.log("Price estimation result:", result);
+
+      // Store the estimate response and temp product IDs
+      setEstimateResponse(result);
+      setTempProductIds(result.temp_product_ids);
+
+      // Convert individual products to priceEstimates format for display
+      const estimates: Record<number, any> = {};
+      result.individual_products.forEach((product: any, index: number) => {
+        estimates[index] = {
+          price: `$${product.estimated_value}`,
+          minPrice: parseFloat(
+            product.price_range.split(" - ")[0].replace("$", "")
+          ),
+          maxPrice: parseFloat(
+            product.price_range.split(" - ")[1].replace("$", "")
+          ),
+          source: "api_estimate",
+          confidence: product.confidence_level.toLowerCase(),
+          referenceCount: product.image_count,
+          temp_product_id: product.temp_product_id,
         };
+      });
+      setPriceEstimates(estimates);
 
-        setPriceEstimates((prev) => ({
-          ...prev,
-          [itemIndex]: estimate,
-        }));
-      } catch (error) {
-        console.error("Error getting price estimate:", error);
-      }
-    },
-    [items]
-  );
+      toast({
+        title: "Price Estimates Calculated!",
+        description: `Total estimated value: $${result.products_summary.total_estimated_value}`,
+      });
+    } catch (error) {
+      console.error("Error calculating price estimates:", error);
+      toast({
+        title: "Error",
+        description: "Failed to calculate price estimates. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [items, mapConditionForApi, getItemEstimates, toast]);
 
   useEffect(() => {
     setStep2Valid(
@@ -476,87 +552,19 @@ export default function SellMultipleItemsForm() {
       e.preventDefault();
       if (!step2Valid) return;
 
-      setIsSubmitting(true);
-
-      // Validate that we have at least one item with required fields
-      const validItems = items.filter(
-        (item) =>
-          item.name?.trim() &&
-          item.description?.trim() &&
-          item.description.trim().length >= 10 &&
-          item.condition &&
-          item.issues?.trim() &&
-          item.photos?.length > 0
-      );
-
-      if (validItems.length === 0) {
-        const invalidItems = items.filter(
-          (item) =>
-            !item.name?.trim() ||
-            !item.description?.trim() ||
-            item.description.trim().length < 10 ||
-            !item.condition ||
-            !item.issues?.trim() ||
-            item.photos?.length === 0
-        );
-
-        let errorMessage = "Please fix the following issues:\n";
-        invalidItems.forEach((item, index) => {
-          errorMessage += `Item ${index + 1}: `;
-          const issues = [];
-          if (!item.name?.trim()) issues.push("name required");
-          if (!item.description?.trim()) issues.push("description required");
-          else if (item.description.trim().length < 10)
-            issues.push("description must be at least 10 characters");
-          if (!item.condition) issues.push("condition required");
-          if (!item.issues?.trim()) issues.push("issues/defects required");
-          if (item.photos?.length === 0)
-            issues.push("at least one photo required");
-          errorMessage += issues.join(", ") + "\n";
-        });
-
+      // Validate that price estimates have been calculated
+      if (!estimateResponse || !tempProductIds || tempProductIds.length === 0) {
         toast({
           title: "Validation Error",
-          description: errorMessage,
+          description: "Please calculate price estimates before submitting.",
           variant: "destructive",
         });
-        setIsSubmitting(false);
         return;
       }
 
-      console.log(
-        "Valid items count:",
-        validItems.length,
-        "out of",
-        items.length
-      );
+      setIsSubmitting(true);
 
       try {
-        // Prepare products data with uploaded_images as base64 strings
-        const products = await Promise.all(
-          validItems.map(async (item) => {
-            const uploaded_images: string[] = [];
-
-            // Convert photos to base64 strings array
-            for (const photo of item.photos || []) {
-              if (photo.base64) {
-                uploaded_images.push(photo.base64);
-              }
-            }
-
-            const productData = {
-              title: item.name || "",
-              description: item.description || "",
-              condition: mapConditionForApi(item.condition),
-              defects: item.issues || "No issues reported",
-              uploaded_images,
-            };
-
-            console.log("Product data for item:", item.name, productData);
-            return productData;
-          })
-        );
-
         // Ensure pickup date is in the future and in the correct format
         const pickupDateTime = new Date(pickupDate);
         // Set time to 2 PM if no time was specified
@@ -584,40 +592,36 @@ export default function SellMultipleItemsForm() {
           });
         }
 
-        // Prepare submission data
-        const submissionData = {
+        // Prepare contact submission data
+        const contactSubmissionData = {
+          temp_product_ids: tempProductIds,
           full_name: fullName,
           email: email,
           phone: formatPhoneForApi(phone),
           pickup_date: pickupDateTime.toISOString(),
           pickup_address: address,
           privacy_policy_accepted: termsAccepted,
-          products,
         };
 
-        console.log("Submitting data:", submissionData);
-        console.log(
-          "Submitting data JSON:",
-          JSON.stringify(submissionData, null, 2)
-        );
+        console.log("Submitting contact data:", contactSubmissionData);
 
-        // Submit to API
-        const result = await submitItems(submissionData).unwrap();
+        // Submit contact info with temp product IDs
+        const result = await submitContactInfo(contactSubmissionData).unwrap();
 
-        console.log("Submission successful:", result);
+        console.log("Contact submission successful:", result);
 
         // Set success state
         setFormSubmitted(true);
         setSubmitResult({
           success: true,
-          message: `Items submitted successfully with ID ${result.id}`,
-          submissionId: result.id,
+          message: `Items submitted successfully with ID ${result.submission_id}`,
+          submissionId: result.submission_id,
           userEmailSent: true,
         });
 
         toast({
           title: "Success!",
-          description: `Your items have been submitted successfully! Submission ID: ${result.id}`,
+          description: `Your items have been submitted successfully! Submission ID: ${result.submission_id}`,
         });
 
         setTimeout(scrollToTop, 50);
@@ -659,16 +663,15 @@ export default function SellMultipleItemsForm() {
     },
     [
       step2Valid,
-      items,
+      estimateResponse,
+      tempProductIds,
       fullName,
       email,
       phone,
       pickupDate,
       address,
-      termsAccepted,
       formatPhoneForApi,
-      mapConditionForApi,
-      submitItems,
+      submitContactInfo,
       toast,
       scrollToTop,
     ]
@@ -1423,11 +1426,8 @@ export default function SellMultipleItemsForm() {
                                                           previewUrl:
                                                             photo.previewUrl,
                                                           errorMessage:
-                                                            event?.message ||
                                                             "Image load failed",
-                                                          errorType:
-                                                            event?.type ||
-                                                            "unknown",
+                                                          errorType: "unknown",
                                                         }
                                                       );
                                                       // Fallback to placeholder
@@ -1494,14 +1494,13 @@ export default function SellMultipleItemsForm() {
                                             3) *
                                             100
                                         )}
-                                        className="h-1.5"
-                                        indicatorClassName={
+                                        className={`h-1.5 ${
                                           (item.photos?.length || 0) +
                                             (item.imageUrl ? 1 : 0) >=
                                           3
-                                            ? "bg-green-500"
-                                            : "bg-gradient-to-r from-blue-500 via-purple-500 to-violet-500"
-                                        }
+                                            ? "[&>div]:bg-green-500"
+                                            : "[&>div]:bg-gradient-to-r [&>div]:from-blue-500 [&>div]:via-purple-500 [&>div]:to-violet-500"
+                                        }`}
                                       />
                                     </div>
                                   </div>
@@ -1697,108 +1696,6 @@ export default function SellMultipleItemsForm() {
                           <Plus className="w-4 h-4 mr-2" />
                           Add Another Item
                         </Button>
-                      </div>
-
-                      {/* NEW: Enhanced Price Estimate Section with eBay integration status */}
-                      <div className="mt-6 p-6 rounded-lg border border-green-200 dark:border-green-800 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20">
-                        <div className="flex items-center gap-2 mb-4">
-                          <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
-                          <h3 className="text-lg font-medium text-slate-900 dark:text-white">
-                            Total Estimated Value
-                          </h3>
-                          {/* {isCalculatingPrices && (
-                            <div className="flex items-center gap-2 ml-auto">
-                              <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                              <span className="text-sm text-blue-600 dark:text-blue-400">
-                                Calculating prices...
-                              </span>
-                            </div>
-                          )} */}
-                        </div>
-
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                          <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
-                              Based on the information you've provided, we
-                              estimate your items are worth approximately:
-                            </p>
-                            {/* Show pricing sources used */}
-                            <div className="flex flex-wrap gap-2">
-                              {/* {priceEstimates.some(
-                                (e) => e.source === "pricing_openai_primary"
-                              ) && (
-                                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-800">
-                                  <Sparkles className="mr-1 h-3 w-3" />
-                                  AI Pro (Pricing Key) - Primary
-                                </Badge>
-                              )}
-                              {/* {priceEstimates.some(
-                                (e) => e.source === "openai_secondary"
-                              ) && (
-                                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border-blue-200 dark:border-blue-800">
-                                  <Sparkles className="mr-1 h-3 w-3" />
-                                  AI Standard - Secondary
-                                </Badge>
-                              )}
-                              {priceEstimates.some(
-                                (e) => e.source === "ebay_fallback"
-                              ) && (
-                                <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800">
-                                  <ShoppingCart className="mr-1 h-3 w-3" />
-                                  eBay Data (Fallback)
-                                </Badge>
-                              )}
-                              {priceEstimates.some(
-                                (e) =>
-                                  e.source === "system_fallback" ||
-                                  e.source === "error_fallback"
-                              ) && (
-                                <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300 border-gray-200 dark:border-gray-800">
-                                  Basic Estimates
-                                </Badge>
-                              )} */}
-                            </div>
-                          </div>
-                          {/* <div className="text-center">
-                            <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-                              {totalEstimate.price}
-                            </div>
-                            <div className="text-sm text-slate-500 dark:text-slate-400">
-                              Range: ${totalEstimate.minPrice} - $
-                              {totalEstimate.maxPrice}
-                            </div>
-                            <Badge
-                              className={`mt-1 ${
-                                totalEstimate.confidence === "high"
-                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                                  : totalEstimate.confidence === "medium"
-                                    ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-                                    : "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
-                              }`}
-                            >
-                              <span>
-                                {totalEstimate.confidence === "high"
-                                  ? "High"
-                                  : totalEstimate.confidence === "medium"
-                                    ? "Medium"
-                                    : "Low"}{" "}
-                                confidence
-                              </span>
-                            </Badge>
-                          </div> */}
-                        </div>
-
-                        <div className="mt-4 text-xs text-slate-500 dark:text-slate-400 flex items-start gap-2">
-                          <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                          <p>
-                            This estimate uses our premium AI pricing service
-                            (PRICING_OPENAI_API_KEY) as the primary method, with
-                            standard AI and eBay market data as fallbacks. The
-                            final offer may vary based on physical inspection.
-                            Adding more details and photos will help us provide
-                            a more accurate estimate.
-                          </p>
-                        </div>
                       </div>
 
                       <div className="flex justify-end mt-6">
@@ -2086,6 +1983,99 @@ export default function SellMultipleItemsForm() {
                         </div>
                       </div>
 
+                      {/* Price Calculation Section */}
+                      <div className="mt-8 transition-all">
+                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
+                          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <Calculator className="w-5 h-5 text-blue-500" />
+                            Price Estimation
+                          </h3>
+
+                          {!estimateResponse ? (
+                            <div className="space-y-4">
+                              <p className="text-slate-600 dark:text-slate-400">
+                                Get instant price estimates for your items
+                                before submitting.
+                              </p>
+                              <Button
+                                type="button"
+                                onClick={calculatePriceEstimates}
+                                disabled={!step1Valid || items.length === 0}
+                                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-md hover:shadow-lg transition-all"
+                              >
+                                <Calculator className="w-4 h-4" />
+                                Calculate Prices
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+                                <h4 className="font-semibold text-slate-900 dark:text-white mb-2">
+                                  Total Estimated Value
+                                </h4>
+                                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                                  $
+                                  {
+                                    estimateResponse.products_summary
+                                      .total_estimated_value
+                                  }
+                                </div>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                  Based on{" "}
+                                  {
+                                    estimateResponse.products_summary
+                                      .total_products
+                                  }{" "}
+                                  items
+                                </p>
+                              </div>
+
+                              <div className="grid gap-3">
+                                {estimateResponse.individual_products.map(
+                                  (product: any, index: number) => (
+                                    <div
+                                      key={index}
+                                      className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700"
+                                    >
+                                      <div className="flex justify-between items-start">
+                                        <div>
+                                          <h5 className="font-medium text-slate-900 dark:text-white text-sm">
+                                            {items[index]?.name ||
+                                              `Item ${index + 1}`}
+                                          </h5>
+                                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            Confidence:{" "}
+                                            {product.confidence_level}
+                                          </p>
+                                        </div>
+                                        <div className="text-right">
+                                          <div className="font-semibold text-green-600 dark:text-green-400">
+                                            ${product.estimated_value}
+                                          </div>
+                                          <div className="text-xs text-slate-500 dark:text-slate-400">
+                                            {product.price_range}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+
+                              <Button
+                                type="button"
+                                onClick={calculatePriceEstimates}
+                                variant="outline"
+                                className="w-full mt-4"
+                              >
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Recalculate Prices
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                       <div className="mt-6 transition-all">
                         <div className="p-4 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
                           <div className="flex items-start space-x-3">
@@ -2093,7 +2083,9 @@ export default function SellMultipleItemsForm() {
                               id="consent"
                               name="consent"
                               checked={termsAccepted}
-                              onCheckedChange={setTermsAccepted}
+                              onCheckedChange={(checked) =>
+                                setTermsAccepted(checked === true)
+                              }
                               className={`mt-1 border-blue-500 text-blue-500 focus-visible:ring-blue-500 ${formErrors.terms ? "border-red-300" : ""}`}
                               required
                             />
@@ -2142,7 +2134,12 @@ export default function SellMultipleItemsForm() {
                         <Button
                           type="submit"
                           disabled={
-                            !step2Valid || isSubmitting || isSubmittingAPI
+                            !step2Valid ||
+                            isSubmitting ||
+                            isSubmittingAPI ||
+                            !estimateResponse ||
+                            !tempProductIds ||
+                            tempProductIds.length === 0
                           }
                           className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white px-8 py-2.5 rounded-md disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg relative overflow-hidden"
                         >
@@ -2154,7 +2151,11 @@ export default function SellMultipleItemsForm() {
                               </>
                             ) : (
                               <>
-                                <span>Submit</span>
+                                <span>
+                                  {!estimateResponse
+                                    ? "Calculate Prices First"
+                                    : "Submit Items"}
+                                </span>
                               </>
                             )}
                           </span>

@@ -1,14 +1,23 @@
-"use client"
+/** @format */
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { BluberryLogoSVG } from "@/components/blueberry-logo-svg"
-import { Facebook, Instagram, Twitter } from "lucide-react"
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { BluberryLogoSVG } from "@/components/blueberry-logo-svg";
+import { Facebook, Instagram, Twitter } from "lucide-react";
 
 export default function Footer() {
-  const pathname = usePathname()
-  const currentYear = new Date().getFullYear()
-
+  const pathname = usePathname();
+  const currentYear = new Date().getFullYear();
+  // Hide navbar on admin routes
+  if (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/profile")
+  ) {
+    return null;
+  }
   // Essential links for both mobile and desktop
   const essentialLinks = [
     { href: "/", label: "Home" },
@@ -16,7 +25,7 @@ export default function Footer() {
     { href: "/sell-multiple-items", label: "Sell Items" },
     { href: "/contact", label: "Contact" },
     { href: "/faq", label: "FAQ" },
-  ]
+  ];
 
   return (
     <footer className="bg-background border-t border-border py-6">
@@ -77,19 +86,27 @@ export default function Footer() {
 
         {/* Legal Links */}
         <div className="flex justify-center gap-4 mb-4">
-          <Link href="/privacy-policy" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+          <Link
+            href="/privacy-policy"
+            className="text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
             Privacy Policy
           </Link>
-          <Link href="/terms" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+          <Link
+            href="/terms"
+            className="text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
             Terms of Service
           </Link>
         </div>
 
         {/* Copyright */}
         <div className="text-center">
-          <p className="text-xs text-muted-foreground">© {currentYear} BluBerry. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground">
+            © {currentYear} BluBerry. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
-  )
+  );
 }

@@ -119,11 +119,19 @@ export function useAuth() {
       const result = await loginMutation({ email, password }).unwrap();
 
       if (result?.success && result?.data) {
-        // Store tokens and user data
+        // Store tokens and user data in localStorage
         localStorage.setItem("access_token", result.data.access_token);
         localStorage.setItem("refresh_token", result.data.refresh_token);
         localStorage.setItem("user", JSON.stringify(result.data.user));
         localStorage.setItem("profile", JSON.stringify(result.data.profile));
+
+        // Also store in cookies for middleware access
+        if (typeof window !== "undefined") {
+          // Set secure cookies
+          document.cookie = `access_token=${result.data.access_token}; path=/; secure; samesite=strict; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          document.cookie = `refresh_token=${result.data.refresh_token}; path=/; secure; samesite=strict; max-age=${30 * 24 * 60 * 60}`; // 30 days
+          document.cookie = `user_role=${result.data.user.role}; path=/; secure; samesite=strict; max-age=${7 * 24 * 60 * 60}`; // 7 days
+        }
 
         // Update Redux state
         dispatch(
@@ -147,6 +155,17 @@ export function useAuth() {
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
     localStorage.removeItem("profile");
+
+    // Clear cookies
+    if (typeof window !== "undefined") {
+      document.cookie =
+        "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+      document.cookie =
+        "refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+      document.cookie =
+        "user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    }
+
     dispatch(clearUser());
   };
 

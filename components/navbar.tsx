@@ -96,6 +96,15 @@ export default function Navbar() {
     setIsSearchOpen(!isSearchOpen);
   };
 
+  // Hide navbar on admin and auth routes
+  if (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/profile")
+  ) {
+    return null;
+  }
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -134,56 +143,16 @@ export default function Navbar() {
           {/* Right side controls */}
           <div className="flex items-center space-x-2">
             {/* Search button */}
-            <button
+            {/* <button
               className="p-2 text-foreground/80 transition-all duration-200 hover:text-primary hover:bg-accent rounded-md"
               onClick={toggleSearch}
               aria-label="Search"
             >
               <SearchIcon size={18} />
-            </button>
+            </button> */}
 
             {/* Theme toggle */}
             {/* <ThemeToggle /> */}
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="relative h-8 w-8 rounded-full"
-                >
-                  <User className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {user ? (
-                  <>
-                    <DropdownMenuLabel>
-                      {profile?.full_name || user.full_name || user.email}
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/profile">Profile</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => logout()}>
-                      Sign out
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                ) : (
-                  <>
-                    <DropdownMenuLabel>Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/auth/sign-in">Sign In</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/auth/sign-up">Sign Up</Link>
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
 
             {/* Mobile menu button */}
             <button

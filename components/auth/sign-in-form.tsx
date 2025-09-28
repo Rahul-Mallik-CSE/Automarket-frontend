@@ -36,7 +36,7 @@ export function SignInForm() {
 
     try {
       await signIn(email, password);
-      router.push("/"); // or wherever you want to redirect after login
+      router.push("/admin"); // or wherever you want to redirect after login
     } catch (error: any) {
       setError(error.message || "Failed to sign in");
     }
@@ -92,14 +92,14 @@ export function SignInForm() {
           </Button>
         </form>
       </CardContent>
-      <CardFooter className="flex justify-center">
+      {/* <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
           <Link href="/auth/sign-up" className="text-primary hover:underline">
             Sign up
           </Link>
         </p>
-      </CardFooter>
+      </CardFooter> */}
     </Card>
   );
 }

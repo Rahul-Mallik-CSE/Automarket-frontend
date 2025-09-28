@@ -1,9 +1,11 @@
-import { ResetPasswordForm } from "@/components/auth/reset-password-form"
+/** @format */
+
+import { ResetPasswordComponent } from "@/components/auth/reset-password";
 
 export default function ResetPasswordPage() {
   return (
     <div className="container mx-auto py-10">
-      <ResetPasswordForm />
+      <ResetPasswordComponent />
     </div>
-  )
+  );
 }

@@ -34,6 +34,42 @@ const authAPI = baseApi.injectEndpoints({
       invalidatesTags: ["Auth"],
     }),
 
+    // Password reset endpoints
+    requestPasswordReset: builder.mutation<any, { email: string }>({
+      query: (data) => ({
+        url: `/auth/password-reset/request/`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Auth"],
+    }),
+
+    verifyResetOtp: builder.mutation<any, { email: string; otp: string }>({
+      query: (data) => ({
+        url: `/auth/reset/otp-verify/`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Auth"],
+    }),
+
+    confirmPasswordReset: builder.mutation<
+      any,
+      {
+        email: string;
+        otp: string;
+        new_password: string;
+        confirm_password: string;
+      }
+    >({
+      query: (data) => ({
+        url: `/auth/password-reset/confirm/`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Auth"],
+    }),
+
     // Existing endpoints
     updatePassword: builder.mutation({
       query: (data) => ({
@@ -89,6 +125,9 @@ export const {
   useCreateOtpMutation,
   useVerifyOtpMutation,
   useLoginMutation,
+  useRequestPasswordResetMutation,
+  useVerifyResetOtpMutation,
+  useConfirmPasswordResetMutation,
   useUpdatePasswordMutation,
   useResetPasswordMutation,
   useVerifyEmailMutation,

@@ -1,46 +1,59 @@
-"use client"
+/** @format */
 
-import type React from "react"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { useAuth } from "@/contexts/auth-context"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, CheckCircle2 } from "lucide-react"
+import type React from "react";
+
+import { useState } from "react";
+import Link from "next/link";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { useRequestPasswordResetMutation } from "@/redux/features/authAPI";
 
 export function ResetPasswordForm() {
-  const [email, setEmail] = useState("")
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const { resetPassword } = useAuth()
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [requestPasswordReset, { isLoading }] =
+    useRequestPasswordResetMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setSuccess(false)
-    setIsLoading(true)
+    e.preventDefault();
+    setError("");
+    setSuccess(false);
+
+    if (!email) {
+      setError("Email is required");
+      return;
+    }
 
     try {
-      await resetPassword(email)
-      setSuccess(true)
+      await requestPasswordReset({ email }).unwrap();
+      setSuccess(true);
     } catch (error: any) {
-      setError(error.message || "Failed to send reset email")
-    } finally {
-      setIsLoading(false)
+      setError(error?.data?.message || "Failed to send reset email");
     }
-  }
+  };
 
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle className="text-2xl text-center">Reset Password</CardTitle>
         <CardDescription className="text-center">
-          Enter your email address and we'll send you a link to reset your password
+          Enter your email address and we'll send you a link to reset your
+          password
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -54,7 +67,10 @@ export function ResetPasswordForm() {
           {success && (
             <Alert className="bg-green-50 text-green-800 border-green-200">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription>Password reset email sent. Check your inbox for further instructions.</AlertDescription>
+              <AlertDescription>
+                Password reset email sent. Check your inbox for further
+                instructions.
+              </AlertDescription>
             </Alert>
           )}
           <div className="space-y-2">
@@ -68,8 +84,12 @@ export function ResetPasswordForm() {
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading || success}>
-            {isLoading ? "Sending..." : "Send Reset Link"}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading || success}
+          >
+            {isLoading ? "Sending..." : "Send OTP"}
           </Button>
         </form>
       </CardContent>
@@ -82,5 +102,5 @@ export function ResetPasswordForm() {
         </p>
       </CardFooter>
     </Card>
-  )
+  );
 }
