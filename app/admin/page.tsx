@@ -21,6 +21,7 @@ import {
   useGetDashboardStatsQuery,
   useGetAdminActivitiesQuery,
   useUpdateProductPriceMutation,
+  useUpdateProductStatusMutation,
   type Product,
 } from "@/redux/features/adminAPI";
 import {
@@ -211,6 +212,10 @@ export default function AdminDashboard() {
   const [updateProductPrice, { isLoading: isPriceUpdating }] =
     useUpdateProductPriceMutation();
 
+  // Update product status mutation
+  const [updateProductStatus, { isLoading: isStatusUpdating }] =
+    useUpdateProductStatusMutation();
+
   // Check if we're in preview mode (no environment variables)
   useEffect(() => {
     const hasSupabaseConfig =
@@ -327,7 +332,7 @@ export default function AdminDashboard() {
       // Demo mode - just update local state
       setSubmissions((prev) =>
         prev.map((item) =>
-          item.id === id ? { ...item, status: newStatus } : item
+          item.id === String(id) ? { ...item, status: newStatus } : item
         )
       );
       return;
@@ -357,7 +362,7 @@ export default function AdminDashboard() {
       // Update local state
       setSubmissions((prev) =>
         prev.map((item) =>
-          item.id === id ? { ...item, status: newStatus } : item
+          item.id === String(id) ? { ...item, status: newStatus } : item
         )
       );
     } catch (err) {
@@ -371,131 +376,176 @@ export default function AdminDashboard() {
     }
   };
 
-  // List item on eBay
-  const listOnEbay = async (id: number) => {
-    if (isPreviewMode) {
-      // Demo mode - simulate listing
-      setActionLoading(id);
-      setTimeout(() => {
-        setSubmissions((prev) =>
-          prev.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  ebay_status: "listed",
-                  listed_on_ebay: true,
-                  ebay_listing_id: "demo-" + Date.now(),
-                }
-              : item
-          )
-        );
-        setActionLoading(null);
-        alert("Successfully listed on eBay! (Demo Mode)");
-      }, 2000);
-      return;
-    }
-
+  // Handle approve action
+  const handleApprove = async (productId: number) => {
     try {
-      setActionLoading(id);
+      setActionLoading(productId);
 
-      const response = await fetch("/api/list-item-on-ebay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
+      const result = await updateProductStatus({
+        id: productId,
+        action: "approve",
+      }).unwrap();
 
-      const result = await response.json();
+      // Refetch activities to get updated data
+      refetchActivities();
 
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to list on eBay");
+      alert(`Product approved successfully! ${result.message}`);
+    } catch (err: any) {
+      console.error("Error approving product:", err);
+
+      let errorMessage = "Failed to approve product";
+      if (err?.data?.detail) {
+        errorMessage = err.data.detail;
+      } else if (err?.data?.error) {
+        errorMessage = err.data.error;
+      } else if (err?.data?.message) {
+        errorMessage = err.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
       }
 
-      // Update local state
-      setSubmissions((prev) =>
-        prev.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                ebay_status: "listed",
-                listed_on_ebay: true,
-                ebay_listing_id: result.listingId,
-              }
-            : item
-        )
-      );
-
-      alert("Successfully listed on eBay!");
-    } catch (err) {
-      console.error("Error listing on eBay:", err);
-      alert(
-        "Failed to list on eBay: " +
-          (err instanceof Error ? err.message : "Unknown error")
-      );
+      alert(`Failed to approve: ${errorMessage}`);
     } finally {
       setActionLoading(null);
     }
   };
 
-  // Unlist item from eBay
-  const unlistFromEbay = async (id: number) => {
-    if (isPreviewMode) {
-      // Demo mode - simulate unlisting
-      setActionLoading(id);
-      setTimeout(() => {
-        setSubmissions((prev) =>
-          prev.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  ebay_status: "unlisted",
-                  listed_on_ebay: false,
-                  ebay_listing_id: null,
-                }
-              : item
-          )
-        );
-        setActionLoading(null);
-        alert("Successfully unlisted from eBay! (Demo Mode)");
-      }, 2000);
+  // Handle reject action
+  const handleReject = async (productId: number) => {
+    try {
+      setActionLoading(productId);
+
+      const result = await updateProductStatus({
+        id: productId,
+        action: "reject",
+      }).unwrap();
+
+      // Refetch activities to get updated data
+      refetchActivities();
+
+      alert(`Product rejected successfully! ${result.message}`);
+    } catch (err: any) {
+      console.error("Error rejecting product:", err);
+
+      let errorMessage = "Failed to reject product";
+      if (err?.data?.detail) {
+        errorMessage = err.data.detail;
+      } else if (err?.data?.error) {
+        errorMessage = err.data.error;
+      } else if (err?.data?.message) {
+        errorMessage = err.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      alert(`Failed to reject: ${errorMessage}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle list on platform action
+  const handleListOnPlatform = async (product: Product) => {
+    // Use final_listing_price if available, otherwise use final_price
+    const priceToUse =
+      product.price.final_listing_price || product.price.final_price;
+
+    if (!priceToUse) {
+      alert("Please set a final price before listing the product");
       return;
     }
 
     try {
-      setActionLoading(id);
+      setActionLoading(product.id);
 
-      const response = await fetch("/api/unlist-ebay-item", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
+      const result = await updateProductStatus({
+        id: product.id,
+        action: "list",
+        final_price: priceToUse.toString(),
+      }).unwrap();
 
-      const result = await response.json();
+      // Refetch activities to get updated data
+      refetchActivities();
 
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to unlist from eBay");
+      alert(`Product listed successfully! ${result.message}`);
+    } catch (err: any) {
+      console.error("Error listing product:", err);
+
+      let errorMessage = "Failed to list product";
+      if (err?.data?.detail) {
+        errorMessage = err.data.detail;
+      } else if (err?.data?.error) {
+        errorMessage = err.data.error;
+      } else if (err?.data?.message) {
+        errorMessage = err.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
       }
 
-      // Update local state
-      setSubmissions((prev) =>
-        prev.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                ebay_status: "unlisted",
-                listed_on_ebay: false,
-                ebay_listing_id: null,
-              }
-            : item
-        )
+      alert(`Failed to list: ${errorMessage}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle unlist action
+  const handleUnlist = async (productId: number) => {
+    try {
+      setActionLoading(productId);
+
+      const result = await updateProductStatus({
+        id: productId,
+        action: "unlist",
+      }).unwrap();
+
+      // Refetch activities to get updated data
+      refetchActivities();
+
+      alert(`Product unlisted successfully! ${result.message}`);
+    } catch (err: any) {
+      console.error("Error unlisting product:", err);
+
+      let errorMessage = "Failed to unlist product";
+      if (err?.data?.detail) {
+        errorMessage = err.data.detail;
+      } else if (err?.data?.error) {
+        errorMessage = err.data.error;
+      } else if (err?.data?.message) {
+        errorMessage = err.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      alert(`Failed to unlist: ${errorMessage}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle delete action (for rejected, sold, or removed products)
+  const handleDelete = async (productId: number) => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this product? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setActionLoading(productId);
+
+      // Call your delete API endpoint here
+      // For now, we'll just show an alert
+      alert(
+        "Delete functionality will be implemented with the delete API endpoint"
       );
 
-      alert("Successfully unlisted from eBay!");
-    } catch (err) {
-      console.error("Error unlisting from eBay:", err);
-      alert(
-        "Failed to unlist from eBay: " +
-          (err instanceof Error ? err.message : "Unknown error")
-      );
+      // Refetch activities to get updated data
+      // refetchActivities();
+    } catch (err: any) {
+      console.error("Error deleting product:", err);
+      alert("Failed to delete product");
     } finally {
       setActionLoading(null);
     }
@@ -977,9 +1027,7 @@ export default function AdminDashboard() {
                             {product.status.current === "PENDING" && (
                               <>
                                 <button
-                                  onClick={() =>
-                                    updateStatus(product.id, "approved")
-                                  }
+                                  onClick={() => handleApprove(product.id)}
                                   disabled={actionLoading === product.id}
                                   className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 disabled:opacity-50"
                                 >
@@ -988,9 +1036,7 @@ export default function AdminDashboard() {
                                     : "Approve"}
                                 </button>
                                 <button
-                                  onClick={() =>
-                                    updateStatus(product.id, "rejected")
-                                  }
+                                  onClick={() => handleReject(product.id)}
                                   disabled={actionLoading === product.id}
                                   className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 disabled:opacity-50"
                                 >
@@ -1003,21 +1049,18 @@ export default function AdminDashboard() {
 
                             {product.status.current === "REJECTED" && (
                               <button
-                                onClick={() =>
-                                  updateStatus(product.id, "deleted")
-                                }
-                                disabled={actionLoading === product.id}
+                                disabled={true}
                                 className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 disabled:opacity-50"
                               >
                                 {actionLoading === product.id
                                   ? "Loading..."
-                                  : "Delete"}
+                                  : "Rejected"}
                               </button>
                             )}
 
                             {product.status.current === "APPROVED" && (
                               <button
-                                onClick={() => listOnEbay(product.id)}
+                                onClick={() => handleListOnPlatform(product)}
                                 disabled={actionLoading === product.id}
                                 className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 disabled:opacity-50"
                               >
@@ -1029,7 +1072,7 @@ export default function AdminDashboard() {
 
                             {product.status.current === "LISTED" && (
                               <button
-                                onClick={() => unlistFromEbay(product.id)}
+                                onClick={() => handleUnlist(product.id)}
                                 disabled={actionLoading === product.id}
                                 className="bg-orange-600 text-white px-3 py-1 rounded text-xs hover:bg-orange-700 disabled:opacity-50"
                               >
@@ -1048,9 +1091,7 @@ export default function AdminDashboard() {
                                   Listed on eBay
                                 </button>
                                 <button
-                                  onClick={() =>
-                                    updateStatus(product.id, "deleted")
-                                  }
+                                  onClick={() => handleDelete(product.id)}
                                   disabled={actionLoading === product.id}
                                   className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 disabled:opacity-50"
                                 >
@@ -1070,9 +1111,7 @@ export default function AdminDashboard() {
                                   Listed on Amazon
                                 </button>
                                 <button
-                                  onClick={() =>
-                                    updateStatus(product.id, "deleted")
-                                  }
+                                  onClick={() => handleDelete(product.id)}
                                   disabled={actionLoading === product.id}
                                   className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 disabled:opacity-50"
                                 >
@@ -1085,15 +1124,13 @@ export default function AdminDashboard() {
 
                             {product.status.current === "REMOVED" && (
                               <button
-                                onClick={() =>
-                                  updateStatus(product.id, "deleted")
-                                }
+                                onClick={() => handleListOnPlatform(product)}
                                 disabled={actionLoading === product.id}
-                                className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 disabled:opacity-50"
+                                className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 disabled:opacity-50"
                               >
                                 {actionLoading === product.id
                                   ? "Loading..."
-                                  : "Delete"}
+                                  : "List on Platform"}
                               </button>
                             )}
 
@@ -1410,161 +1447,6 @@ export default function AdminDashboard() {
             </div>
 
             {/* Modal Actions */}
-            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
-              {/* Status-based action buttons in modal */}
-              {selectedProduct.status.current === "PENDING" && (
-                <>
-                  <button
-                    onClick={() => {
-                      updateStatus(selectedProduct.id, "approved");
-                      setSelectedProduct(null);
-                    }}
-                    disabled={actionLoading === selectedProduct.id}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
-                  >
-                    {actionLoading === selectedProduct.id
-                      ? "Processing..."
-                      : "Approve"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      updateStatus(selectedProduct.id, "rejected");
-                      setSelectedProduct(null);
-                    }}
-                    disabled={actionLoading === selectedProduct.id}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-                  >
-                    {actionLoading === selectedProduct.id
-                      ? "Processing..."
-                      : "Reject"}
-                  </button>
-                </>
-              )}
-
-              {selectedProduct.status.current === "REMOVED" && (
-                <>
-                  <button
-                    onClick={() => {
-                      updateStatus(selectedProduct.id, "approved");
-                      setSelectedProduct(null);
-                    }}
-                    disabled={actionLoading === selectedProduct.id}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
-                  >
-                    {actionLoading === selectedProduct.id
-                      ? "Processing..."
-                      : "Approve"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      updateStatus(selectedProduct.id, "rejected");
-                      setSelectedProduct(null);
-                    }}
-                    disabled={actionLoading === selectedProduct.id}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-                  >
-                    {actionLoading === selectedProduct.id
-                      ? "Processing..."
-                      : "Reject"}
-                  </button>
-                </>
-              )}
-
-              {selectedProduct.status.current === "APPROVED" && (
-                <>
-                  <button
-                    onClick={() => {
-                      listOnEbay(selectedProduct.id);
-                      setSelectedProduct(null);
-                    }}
-                    disabled={actionLoading === selectedProduct.id}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                  >
-                    {actionLoading === selectedProduct.id
-                      ? "Processing..."
-                      : "List on eBay"}
-                  </button>
-                  <button
-                    disabled={true}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-lg opacity-50 cursor-not-allowed transition-colors"
-                  >
-                    List on Amazon
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleEditPrice(selectedProduct);
-                      setSelectedProduct(null);
-                    }}
-                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
-                  >
-                    Edit Price
-                  </button>
-                </>
-              )}
-
-              {selectedProduct.status.current === "LISTED" && (
-                <>
-                  <button
-                    onClick={() => {
-                      unlistFromEbay(selectedProduct.id);
-                      setSelectedProduct(null);
-                    }}
-                    disabled={actionLoading === selectedProduct.id}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-                  >
-                    {actionLoading === selectedProduct.id
-                      ? "Processing..."
-                      : "Unlist"}
-                  </button>
-                  <button
-                    disabled={true}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg opacity-50 cursor-not-allowed transition-colors"
-                  >
-                    Listed on eBay
-                  </button>
-                  <button
-                    disabled={true}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-lg opacity-50 cursor-not-allowed transition-colors"
-                  >
-                    Listed on Amazon
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleEditPrice(selectedProduct);
-                      setSelectedProduct(null);
-                    }}
-                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
-                  >
-                    Edit Price
-                  </button>
-                </>
-              )}
-
-              {selectedProduct.status.current === "EBAY_SOLD" && (
-                <button
-                  disabled={true}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg opacity-50 cursor-not-allowed transition-colors"
-                >
-                  Sold on eBay
-                </button>
-              )}
-
-              {selectedProduct.status.current === "AMAZON_SOLD" && (
-                <button
-                  disabled={true}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg opacity-50 cursor-not-allowed transition-colors"
-                >
-                  Sold on Amazon
-                </button>
-              )}
-
-              <button
-                onClick={() => setSelectedProduct(null)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-              >
-                Close
-              </button>
-            </div>
           </div>
         </div>
       )}

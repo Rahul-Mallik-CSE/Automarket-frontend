@@ -163,6 +163,31 @@ const adminAPI = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["AdminActivities", "AdminStats"],
     }),
+
+    // Update product status
+    updateProductStatus: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        product: {
+          id: number;
+          status: string;
+          updated_at: string;
+        };
+      },
+      {
+        id: number;
+        action: "approve" | "reject" | "list" | "unlist";
+        final_price?: string;
+      }
+    >({
+      query: ({ id, action, final_price }) => ({
+        url: `/admin/products/${id}/update-status/`,
+        method: "POST",
+        body: final_price ? { action, final_price } : { action },
+      }),
+      invalidatesTags: ["AdminActivities", "AdminStats"],
+    }),
   }),
 });
 
@@ -170,6 +195,7 @@ export const {
   useGetDashboardStatsQuery,
   useGetAdminActivitiesQuery,
   useUpdateProductPriceMutation,
+  useUpdateProductStatusMutation,
 } = adminAPI;
 
 export default adminAPI;
