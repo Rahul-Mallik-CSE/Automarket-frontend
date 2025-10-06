@@ -172,6 +172,7 @@ const DEMO_SUBMISSIONS: ItemSubmission[] = [
     listed_on_ebay: false,
   },
 ];
+import { ToastContainer, toast } from "react-toastify";
 
 export default function AdminDashboard() {
   const [submissions, setSubmissions] = useState<ItemSubmission[]>([]);
@@ -367,7 +368,7 @@ export default function AdminDashboard() {
       );
     } catch (err) {
       console.error("Error updating status:", err);
-      alert(
+      toast(
         "Failed to update status: " +
           (err instanceof Error ? err.message : "Unknown error")
       );
@@ -389,7 +390,7 @@ export default function AdminDashboard() {
       // Refetch activities to get updated data
       refetchActivities();
 
-      alert(`Product approved successfully! ${result.message}`);
+      toast(`Product approved successfully! ${result.message}`);
     } catch (err: any) {
       console.error("Error approving product:", err);
 
@@ -404,7 +405,7 @@ export default function AdminDashboard() {
         errorMessage = err.message;
       }
 
-      alert(`Failed to approve: ${errorMessage}`);
+      toast(`Failed to approve: ${errorMessage}`);
     } finally {
       setActionLoading(null);
     }
@@ -423,7 +424,7 @@ export default function AdminDashboard() {
       // Refetch activities to get updated data
       refetchActivities();
 
-      alert(`Product rejected successfully! ${result.message}`);
+      toast(`Product rejected successfully! ${result.message}`);
     } catch (err: any) {
       console.error("Error rejecting product:", err);
 
@@ -438,7 +439,7 @@ export default function AdminDashboard() {
         errorMessage = err.message;
       }
 
-      alert(`Failed to reject: ${errorMessage}`);
+      toast(`Failed to reject: ${errorMessage}`);
     } finally {
       setActionLoading(null);
     }
@@ -451,7 +452,7 @@ export default function AdminDashboard() {
       product.price.final_listing_price || product.price.final_price;
 
     if (!priceToUse) {
-      alert("Please set a final price before listing the product");
+      toast("Please set a final price before listing the product");
       return;
     }
 
@@ -467,7 +468,7 @@ export default function AdminDashboard() {
       // Refetch activities to get updated data
       refetchActivities();
 
-      alert(`Product listed successfully! ${result.message}`);
+      toast(`Product listed successfully! ${result.message}`);
     } catch (err: any) {
       console.error("Error listing product:", err);
 
@@ -482,7 +483,7 @@ export default function AdminDashboard() {
         errorMessage = err.message;
       }
 
-      alert(`Failed to list: ${errorMessage}`);
+      toast(`Failed to list: ${errorMessage}`);
     } finally {
       setActionLoading(null);
     }
@@ -501,7 +502,7 @@ export default function AdminDashboard() {
       // Refetch activities to get updated data
       refetchActivities();
 
-      alert(`Product unlisted successfully! ${result.message}`);
+      toast(`Product unlisted successfully! ${result.message}`);
     } catch (err: any) {
       console.error("Error unlisting product:", err);
 
@@ -516,7 +517,7 @@ export default function AdminDashboard() {
         errorMessage = err.message;
       }
 
-      alert(`Failed to unlist: ${errorMessage}`);
+      toast(`Failed to unlist: ${errorMessage}`);
     } finally {
       setActionLoading(null);
     }
@@ -536,8 +537,8 @@ export default function AdminDashboard() {
       setActionLoading(productId);
 
       // Call your delete API endpoint here
-      // For now, we'll just show an alert
-      alert(
+      // For now, we'll just show an toast
+      toast(
         "Delete functionality will be implemented with the delete API endpoint"
       );
 
@@ -545,7 +546,7 @@ export default function AdminDashboard() {
       // refetchActivities();
     } catch (err: any) {
       console.error("Error deleting product:", err);
-      alert("Failed to delete product");
+      toast("Failed to delete product");
     } finally {
       setActionLoading(null);
     }
@@ -565,14 +566,14 @@ export default function AdminDashboard() {
   // Handle price update submission
   const handlePriceUpdate = async () => {
     if (!editingProduct || !newPrice) {
-      alert("Please enter a valid price");
+      toast("Please enter a valid price");
       return;
     }
 
     // Validate price is a positive number
     const priceValue = parseFloat(newPrice);
     if (isNaN(priceValue) || priceValue <= 0) {
-      alert("Please enter a valid positive price");
+      toast("Please enter a valid positive price");
       return;
     }
 
@@ -598,7 +599,7 @@ export default function AdminDashboard() {
       // Refetch activities to get updated data
       refetchActivities();
 
-      alert(`Price updated successfully! ${result.message}`);
+      toast(`Price updated successfully! ${result.message}`);
     } catch (err: any) {
       console.error("Error updating price:", err);
 
@@ -624,7 +625,7 @@ export default function AdminDashboard() {
         errorMessage = err.message;
       }
 
-      alert(`Failed to update price: ${errorMessage}`);
+      toast(`Failed to update price: ${errorMessage}`);
     }
   };
 
@@ -706,6 +707,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-900">
+      <ToastContainer />
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between">

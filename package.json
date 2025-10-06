@@ -67,6 +67,7 @@
     "react-intersection-observer": "latest",
     "react-redux": "^9.2.0",
     "react-resizable-panels": "^2.1.7",
+    "react-toastify": "^11.0.5",
     "recharts": "2.15.0",
     "resend": "latest",
     "sharp": "latest",
