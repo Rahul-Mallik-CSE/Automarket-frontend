@@ -14,14 +14,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { User } from "lucide-react";
+import { PenLine, User } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/userAuth";
 import {
   useGetDashboardStatsQuery,
   useGetAdminActivitiesQuery,
+  useUpdateProductPriceMutation,
   type Product,
 } from "@/redux/features/adminAPI";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 // Simple types
 interface ItemSubmission {
@@ -171,6 +183,10 @@ export default function AdminDashboard() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showPriceEditModal, setShowPriceEditModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [newPrice, setNewPrice] = useState("");
+  const [adminNotes, setAdminNotes] = useState("");
   const { user, profile, logout } = useAuth();
 
   // Fetch dashboard stats from API
@@ -190,6 +206,10 @@ export default function AdminDashboard() {
     page: 1,
     page_size: 20,
   });
+
+  // Update product price mutation
+  const [updateProductPrice, { isLoading: isPriceUpdating }] =
+    useUpdateProductPriceMutation();
 
   // Check if we're in preview mode (no environment variables)
   useEffect(() => {
@@ -478,6 +498,85 @@ export default function AdminDashboard() {
       );
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  // Open price edit modal
+  const handleEditPrice = (product: Product) => {
+    setEditingProduct(product);
+    setNewPrice(
+      product.price.final_listing_price?.toString() ||
+        product.price.final_price.toString()
+    );
+    setAdminNotes("");
+    setShowPriceEditModal(true);
+  };
+
+  // Handle price update submission
+  const handlePriceUpdate = async () => {
+    if (!editingProduct || !newPrice) {
+      alert("Please enter a valid price");
+      return;
+    }
+
+    // Validate price is a positive number
+    const priceValue = parseFloat(newPrice);
+    if (isNaN(priceValue) || priceValue <= 0) {
+      alert("Please enter a valid positive price");
+      return;
+    }
+
+    try {
+      console.log("Updating price for product:", {
+        id: editingProduct.id,
+        final_price: newPrice,
+        admin_notes: adminNotes,
+      });
+
+      const result = await updateProductPrice({
+        id: editingProduct.id,
+        final_price: newPrice,
+        admin_notes: adminNotes,
+      }).unwrap();
+
+      console.log("Price update response:", result);
+
+      // Close modal and reset state
+      setShowPriceEditModal(false);
+      setEditingProduct(null);
+      setNewPrice("");
+      setAdminNotes("");
+
+      // Refetch activities to get updated data
+      refetchActivities();
+
+      alert(`Price updated successfully! ${result.message}`);
+    } catch (err: any) {
+      console.error("Error updating price:", err);
+
+      // Enhanced error handling
+      let errorMessage = "Failed to update price";
+
+      if (err?.data) {
+        // If there's a data property, try to extract error details
+        if (err.data.detail) {
+          errorMessage = err.data.detail;
+        } else if (err.data.error) {
+          errorMessage = err.data.error;
+        } else if (err.data.message) {
+          errorMessage = err.data.message;
+        } else if (typeof err.data === "string") {
+          errorMessage = err.data;
+        } else {
+          errorMessage = JSON.stringify(err.data);
+        }
+      } else if (err?.message) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      alert(`Failed to update price: ${errorMessage}`);
     }
   };
 
@@ -838,19 +937,25 @@ export default function AdminDashboard() {
 
                         {/* Price */}
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            ${product.price.estimated_value.toFixed(2)}
+                          <div className="text-base font-medium text-blue-600">
+                            Listed Price: $
+                            {product.price.final_price.toFixed(2)}{" "}
+                            {/* price edit button */}
+                            <Button
+                              onClick={() => handleEditPrice(product)}
+                              className="h-6 w-6 bg-transparent hover:bg-gray-200 text-black"
+                            >
+                              <PenLine />
+                            </Button>
+                          </div>
+                          <div className="text-xs text-gray-900">
+                            Estimated: $
+                            {product.price.estimated_value.toFixed(2)}
                           </div>
                           <div className="text-xs text-gray-500">
                             Range: ${product.price.min_range.toFixed(2)} - $
                             {product.price.max_range.toFixed(2)}
                           </div>
-                          {product.price.final_listing_price && (
-                            <div className="text-xs text-blue-600">
-                              Listed: $
-                              {product.price.final_listing_price.toFixed(2)}
-                            </div>
-                          )}
                         </td>
 
                         {/* Date */}
@@ -941,12 +1046,6 @@ export default function AdminDashboard() {
                                   className="bg-purple-600 text-white px-3 py-1 rounded text-xs opacity-50 cursor-not-allowed"
                                 >
                                   List on Amazon
-                                </button>
-                                <button
-                                  disabled={true}
-                                  className="bg-yellow-600 text-white px-3 py-1 rounded text-xs opacity-50 cursor-not-allowed"
-                                >
-                                  Edit Price
                                 </button>
                               </>
                             )}
@@ -1389,8 +1488,11 @@ export default function AdminDashboard() {
                     List on Amazon
                   </button>
                   <button
-                    disabled={true}
-                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg opacity-50 cursor-not-allowed transition-colors"
+                    onClick={() => {
+                      handleEditPrice(selectedProduct);
+                      setSelectedProduct(null);
+                    }}
+                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
                   >
                     Edit Price
                   </button>
@@ -1423,6 +1525,15 @@ export default function AdminDashboard() {
                   >
                     Listed on Amazon
                   </button>
+                  <button
+                    onClick={() => {
+                      handleEditPrice(selectedProduct);
+                      setSelectedProduct(null);
+                    }}
+                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+                  >
+                    Edit Price
+                  </button>
                 </>
               )}
 
@@ -1454,6 +1565,103 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Price Edit Dialog */}
+      <Dialog open={showPriceEditModal} onOpenChange={setShowPriceEditModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Product Price</DialogTitle>
+            <DialogDescription>
+              Update the final listing price for this product. The price will be
+              used when listing on platforms.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingProduct && (
+            <div className="space-y-4 py-4">
+              {/* Product Info */}
+              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                <p className="text-sm font-medium text-gray-900">
+                  {editingProduct.item.title}
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-gray-500">Estimated:</span>
+                    <span className="ml-2 font-medium">
+                      ${editingProduct.price.estimated_value.toFixed(2)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Range:</span>
+                    <span className="ml-2 font-medium">
+                      ${editingProduct.price.min_range.toFixed(2)} - $
+                      {editingProduct.price.max_range.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                {editingProduct.price.final_listing_price && (
+                  <div className="text-xs">
+                    <span className="text-blue-600">Current Listed Price:</span>
+                    <span className="ml-2 font-medium text-blue-700">
+                      ${editingProduct.price.final_listing_price.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Price Input */}
+              <div className="space-y-2">
+                <Label htmlFor="price">New Final Price ($)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newPrice}
+                  onChange={(e) => setNewPrice(e.target.value)}
+                  placeholder="Enter new price"
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500">
+                  Recommended range: $
+                  {editingProduct.price.min_range.toFixed(2)} - $
+                  {editingProduct.price.max_range.toFixed(2)}
+                </p>
+              </div>
+
+              {/* Admin Notes */}
+              <div className="space-y-2">
+                <Label htmlFor="notes">Admin Notes (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Enter notes about this price adjustment..."
+                  className="resize-none"
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowPriceEditModal(false)}
+              disabled={isPriceUpdating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handlePriceUpdate}
+              disabled={isPriceUpdating || !newPrice}
+              className="bg-yellow-600 hover:bg-yellow-700"
+            >
+              {isPriceUpdating ? "Updating..." : "Update Price"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

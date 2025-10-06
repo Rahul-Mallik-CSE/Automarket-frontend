@@ -46,6 +46,7 @@ export interface ProductStatus {
 
 export interface ProductPrice {
   estimated_value: number;
+  final_price: number;
   final_listing_price: number | null;
   sold_price: number | null;
   min_range: number;
@@ -134,10 +135,43 @@ const adminAPI = baseApi.injectEndpoints({
       }),
       providesTags: ["AdminActivities"],
     }),
+
+    // Update product price
+    updateProductPrice: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        product: {
+          id: number;
+          title: string;
+          estimated_value: number;
+          final_price: string;
+          updated_at: string;
+        };
+      },
+      {
+        id: number;
+        final_price: string;
+        admin_notes?: string;
+      }
+    >({
+      query: ({ id, final_price, admin_notes }) => ({
+        url: `/admin/products/${id}/update-price/`,
+        method: "POST",
+        body: {
+          final_price: final_price, // Keep as string, backend expects string
+          admin_notes: admin_notes || "",
+        },
+      }),
+      invalidatesTags: ["AdminActivities", "AdminStats"],
+    }),
   }),
 });
 
-export const { useGetDashboardStatsQuery, useGetAdminActivitiesQuery } =
-  adminAPI;
+export const {
+  useGetDashboardStatsQuery,
+  useGetAdminActivitiesQuery,
+  useUpdateProductPriceMutation,
+} = adminAPI;
 
 export default adminAPI;
