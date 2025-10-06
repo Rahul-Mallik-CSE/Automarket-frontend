@@ -1,18 +1,34 @@
-"use client"
+/** @format */
 
-import { useState } from "react"
-import FileUploader from "@/components/file-uploader"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+"use client";
+
+import { useState } from "react";
+import FileUploader from "@/components/file-uploader";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+export const dynamic = "force-dynamic";
 
 export default function FileUploadDemo() {
-  const [uploadedFiles, setUploadedFiles] = useState<Array<{ url: string; path: string }>>([])
+  const [uploadedFiles, setUploadedFiles] = useState<
+    Array<{ url: string; path: string }>
+  >([]);
 
   // In a real app, you would get the user ID from authentication
-  const demoUserId = "demo-user"
+  const demoUserId = "demo-user";
 
-  const handleUploadComplete = (url: string, path: string) => {
-    setUploadedFiles((prev) => [...prev, { url, path }])
-  }
+  const handleUploadComplete = (files: { path: string }[]) => {
+    const newFiles = files.map((file) => ({
+      url: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${file.path}`,
+      path: file.path,
+    }));
+    setUploadedFiles((prev) => [...prev, ...newFiles]);
+  };
 
   return (
     <div className="container mx-auto py-10">
@@ -22,17 +38,24 @@ export default function FileUploadDemo() {
         <Card>
           <CardHeader>
             <CardTitle>Upload Files to Supabase Storage</CardTitle>
-            <CardDescription>Select a file and click upload to store it in Supabase</CardDescription>
+            <CardDescription>
+              Select a file and click upload to store it in Supabase
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <FileUploader userId={demoUserId} onUploadComplete={handleUploadComplete} />
+            <FileUploader
+              userId={demoUserId}
+              onUploadComplete={handleUploadComplete}
+            />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>Uploaded Files</CardTitle>
-            <CardDescription>Files you've uploaded in this session</CardDescription>
+            <CardDescription>
+              Files you've uploaded in this session
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {uploadedFiles.length === 0 ? (
@@ -53,7 +76,9 @@ export default function FileUploadDemo() {
                       )}
                     </div>
                     <div className="flex-1 overflow-hidden">
-                      <p className="text-sm font-medium truncate">{file.path.split("/").pop()}</p>
+                      <p className="text-sm font-medium truncate">
+                        {file.path.split("/").pop()}
+                      </p>
                       <a
                         href={file.url}
                         target="_blank"
@@ -71,5 +96,5 @@ export default function FileUploadDemo() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
