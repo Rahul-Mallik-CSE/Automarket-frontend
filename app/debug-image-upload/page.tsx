@@ -1,24 +1,30 @@
-"use client"
+/** @format */
 
-import { ReliableImageUpload } from "@/components/reliable-image-upload"
+"use client";
+
+import { ReliableImageUpload } from "@/components/reliable-image-upload";
+
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = "force-dynamic";
 
 export default function DebugImageUploadPage() {
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-2xl font-bold mb-6">Debug Image Upload</h1>
       <p className="mb-6">
-        This page helps diagnose issues with Supabase image uploads. It provides both client-side and server-side upload
-        options and detailed error reporting.
+        This page helps diagnose issues with Supabase image uploads. It provides
+        both client-side and server-side upload options and detailed error
+        reporting.
       </p>
 
       <div className="flex justify-center">
         <ReliableImageUpload
           userId="debug-user"
           onUploadComplete={(result) => {
-            console.log("Upload completed:", result)
+            console.log("Upload completed:", result);
           }}
         />
       </div>
     </div>
-  )
+  );
 }

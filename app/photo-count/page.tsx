@@ -1,18 +1,25 @@
-import type { Metadata } from "next"
-import PhotoCountManager from "@/components/photo-count-manager"
-import EnvBucketUploader from "@/components/env-bucket-uploader"
+/** @format */
+
+import type { Metadata } from "next";
+import PhotoCountManager from "@/components/photo-count-manager";
+import EnvBucketUploader from "@/components/env-bucket-uploader";
+
+// Force dynamic rendering to prevent build-time errors with Supabase
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Photo Count Manager",
   description: "Manage and verify photo counts for items",
-}
+};
 
 export default function PhotoCountPage() {
   return (
     <div className="container mx-auto py-10 space-y-10">
       <div className="text-center">
         <h1 className="text-3xl font-bold mb-2">Photo Count Manager</h1>
-        <p className="text-gray-500">Verify and update photo counts for items</p>
+        <p className="text-gray-500">
+          Verify and update photo counts for items
+        </p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
@@ -27,5 +34,5 @@ export default function PhotoCountPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

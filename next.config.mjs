@@ -1,4 +1,8 @@
-/** @type {import('next').NextConfig} */
+/**
+ * @format
+ * @type {import('next').NextConfig}
+ */
+
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -9,6 +13,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-}
+  // Skip building pages that require runtime environment variables
+  experimental: {
+    missingSuspenseWithCSRBailout: false,
+  },
+};
 
-export default nextConfig
+export default nextConfig;

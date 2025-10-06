@@ -1,59 +1,68 @@
-"use client"
+/** @format */
 
-import type React from "react"
+"use client";
 
-import { useState } from "react"
-import supabase from "@/lib/supabase"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Upload } from "lucide-react"
+import type React from "react";
+
+import { useState } from "react";
+import supabase from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, Upload } from "lucide-react";
+
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = "force-dynamic";
 
 export default function SimpleUpload() {
-  const [file, setFile] = useState<File | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
-  const [status, setStatus] = useState<string>("")
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [status, setStatus] = useState<string>("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
-      setStatus("")
-      setImageUrl(null)
+      setFile(e.target.files[0]);
+      setStatus("");
+      setImageUrl(null);
     }
-  }
+  };
 
   const uploadFile = async () => {
     if (!file) {
-      setStatus("Please select a file first")
-      return
+      setStatus("Please select a file first");
+      return;
     }
 
-    setIsUploading(true)
-    setStatus("Uploading...")
+    setIsUploading(true);
+    setStatus("Uploading...");
 
     try {
       // Create a unique path for the file
-      const path = `uploads/${Date.now()}-${file.name}`
+      const path = `uploads/${Date.now()}-${file.name}`;
 
       // This is the exact line the user provided
-      const { data, error } = await supabase.storage.from("images").upload(path, file)
+      const { data, error } = await supabase.storage
+        .from("images")
+        .upload(path, file);
 
       if (error) {
-        throw error
+        throw error;
       }
 
       // Get the public URL of the uploaded file
-      const { data: urlData } = supabase.storage.from("images").getPublicUrl(path)
+      const { data: urlData } = supabase.storage
+        .from("images")
+        .getPublicUrl(path);
 
-      setStatus("Upload successful!")
-      setImageUrl(urlData.publicUrl)
+      setStatus("Upload successful!");
+      setImageUrl(urlData.publicUrl);
     } catch (error: any) {
-      console.error("Error uploading file:", error)
-      setStatus(`Error: ${error.message || "Unknown error occurred"}`)
+      console.error("Error uploading file:", error);
+      setStatus(`Error: ${error.message || "Unknown error occurred"}`);
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
-  }
+  };
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-md">
@@ -72,11 +81,21 @@ export default function SimpleUpload() {
                 <Upload className="mr-2 h-4 w-4" />
                 Select Image
               </Button>
-              <input id="file-input" type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+              <input
+                id="file-input"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
               {file && <span className="text-sm">{file.name}</span>}
             </div>
 
-            <Button onClick={uploadFile} disabled={!file || isUploading} className="w-full">
+            <Button
+              onClick={uploadFile}
+              disabled={!file || isUploading}
+              className="w-full"
+            >
               {isUploading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -104,7 +123,11 @@ export default function SimpleUpload() {
             {imageUrl && (
               <div className="mt-4">
                 <p className="text-sm font-medium mb-2">Uploaded Image:</p>
-                <img src={imageUrl || "/placeholder.svg"} alt="Uploaded" className="w-full h-auto rounded-md border" />
+                <img
+                  src={imageUrl || "/placeholder.svg"}
+                  alt="Uploaded"
+                  className="w-full h-auto rounded-md border"
+                />
               </div>
             )}
           </div>
@@ -126,5 +149,5 @@ const { data: urlData } = supabase.storage
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
