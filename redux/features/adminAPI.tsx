@@ -152,15 +152,13 @@ const adminAPI = baseApi.injectEndpoints({
       {
         id: number;
         final_price: string;
-        admin_notes?: string;
       }
     >({
-      query: ({ id, final_price, admin_notes }) => ({
+      query: ({ id, final_price }) => ({
         url: `/admin/products/${id}/update-price/`,
         method: "POST",
         body: {
           final_price: final_price, // Keep as string, backend expects string
-          admin_notes: admin_notes || "",
         },
       }),
       invalidatesTags: ["AdminActivities", "AdminStats"],

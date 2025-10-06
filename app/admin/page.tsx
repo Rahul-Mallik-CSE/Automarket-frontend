@@ -530,13 +530,11 @@ export default function AdminDashboard() {
       console.log("Updating price for product:", {
         id: editingProduct.id,
         final_price: newPrice,
-        admin_notes: adminNotes,
       });
 
       const result = await updateProductPrice({
         id: editingProduct.id,
         final_price: newPrice,
-        admin_notes: adminNotes,
       }).unwrap();
 
       console.log("Price update response:", result);
@@ -1627,19 +1625,6 @@ export default function AdminDashboard() {
                   {editingProduct.price.min_range.toFixed(2)} - $
                   {editingProduct.price.max_range.toFixed(2)}
                 </p>
-              </div>
-
-              {/* Admin Notes */}
-              <div className="space-y-2">
-                <Label htmlFor="notes">Admin Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  rows={3}
-                  placeholder="Enter notes about this price adjustment..."
-                  className="resize-none"
-                />
               </div>
             </div>
           )}
