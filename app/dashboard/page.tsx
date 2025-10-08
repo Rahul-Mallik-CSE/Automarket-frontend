@@ -4,16 +4,11 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+
+import supabase from "@/lib/supabase";
 
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default function Dashboard() {
   const searchParams = useSearchParams();
@@ -49,8 +44,14 @@ export default function Dashboard() {
     setErrorMessage("");
 
     try {
+      if (!supabase) {
+        setSaveStatus("error");
+        setErrorMessage(
+          "Supabase client is not initialized. Check environment variables."
+        );
+        return;
+      }
       const expiresAt = Date.now() + expiresIn * 1000;
-
       const upsertPayload = {
         id: "singleton",
         access_token: accessToken,
@@ -58,11 +59,9 @@ export default function Dashboard() {
         expires_at: expiresAt,
         updated_at: new Date().toISOString(),
       };
-
       const { error } = await supabase
         .from("ebay_tokens")
         .upsert(upsertPayload, { onConflict: "id" });
-
       if (error) {
         console.error("❌ Supabase upsert error:", error.message);
         setSaveStatus("error");
