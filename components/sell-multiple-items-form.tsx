@@ -1997,14 +1997,28 @@ export default function SellMultipleItemsForm() {
                                 Get instant price estimates for your items
                                 before submitting.
                               </p>
+                              {/* calculate price button */}
                               <Button
                                 type="button"
                                 onClick={calculatePriceEstimates}
-                                disabled={!step1Valid || items.length === 0}
-                                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-md hover:shadow-lg transition-all"
+                                disabled={
+                                  !step1Valid ||
+                                  items.length === 0 ||
+                                  isCalculatingPrices
+                                }
+                                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                <Calculator className="w-4 h-4" />
-                                Calculate Prices
+                                {isCalculatingPrices ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Calculating Prices...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Calculator className="w-4 h-4" />
+                                    Calculate Prices
+                                  </>
+                                )}
                               </Button>
                             </div>
                           ) : (
