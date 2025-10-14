@@ -40,7 +40,7 @@ const initialState: UserState = {
   user: null,
   profile: null,
   isAuthenticated: false,
-  isLoading: true,
+  isLoading: false, // Changed to false to prevent hydration mismatch
 };
 
 // User slice
@@ -109,9 +109,11 @@ export function useAuth() {
 
   const [loginMutation, { isLoading: isLoggingIn }] = useLoginMutation();
 
-  // Initialize auth on first load
+  // Initialize auth on first load (client-side only)
   useEffect(() => {
-    dispatch(initializeAuth());
+    if (typeof window !== "undefined") {
+      dispatch(initializeAuth());
+    }
   }, [dispatch]);
 
   const signIn = async (email: string, password: string) => {
@@ -127,10 +129,21 @@ export function useAuth() {
 
         // Also store in cookies for middleware access
         if (typeof window !== "undefined") {
-          // Set secure cookies
-          document.cookie = `access_token=${result.data.access_token}; path=/; secure; samesite=strict; max-age=${7 * 24 * 60 * 60}`; // 7 days
-          document.cookie = `refresh_token=${result.data.refresh_token}; path=/; secure; samesite=strict; max-age=${30 * 24 * 60 * 60}`; // 30 days
-          document.cookie = `user_role=${result.data.user.role}; path=/; secure; samesite=strict; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          // Determine if we're in a secure context (HTTPS or localhost)
+          const isSecureContext =
+            window.location.protocol === "https:" ||
+            window.location.hostname === "localhost" ||
+            window.location.hostname === "127.0.0.1";
+
+          // Set cookies with conditional secure flag
+          const secureFlag = isSecureContext ? "; secure" : "";
+          const sameSiteFlag = isSecureContext
+            ? "; samesite=strict"
+            : "; samesite=lax";
+
+          document.cookie = `access_token=${result.data.access_token}; path=/${secureFlag}${sameSiteFlag}; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          document.cookie = `refresh_token=${result.data.refresh_token}; path=/${secureFlag}${sameSiteFlag}; max-age=${30 * 24 * 60 * 60}`; // 30 days
+          document.cookie = `user_role=${result.data.user.role}; path=/${secureFlag}${sameSiteFlag}; max-age=${7 * 24 * 60 * 60}`; // 7 days
         }
 
         // Update Redux state
@@ -158,12 +171,16 @@ export function useAuth() {
 
     // Clear cookies
     if (typeof window !== "undefined") {
-      document.cookie =
-        "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-      document.cookie =
-        "refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-      document.cookie =
-        "user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+      // Clear cookies for all possible configurations
+      const expireDate = "expires=Thu, 01 Jan 1970 00:00:01 GMT";
+      document.cookie = `access_token=; path=/; ${expireDate};`;
+      document.cookie = `refresh_token=; path=/; ${expireDate};`;
+      document.cookie = `user_role=; path=/; ${expireDate};`;
+
+      // Also clear with secure flag in case they were set with it
+      document.cookie = `access_token=; path=/; secure; ${expireDate};`;
+      document.cookie = `refresh_token=; path=/; secure; ${expireDate};`;
+      document.cookie = `user_role=; path=/; secure; ${expireDate};`;
     }
 
     dispatch(clearUser());

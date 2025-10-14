@@ -23,6 +23,19 @@ export function middleware(request: NextRequest) {
       request.cookies.get("access_token")?.value ||
       request.headers.get("authorization")?.replace("Bearer ", "");
 
+    console.log("Middleware - URL:", request.url);
+    console.log("Middleware - Hostname:", request.nextUrl.hostname);
+    console.log(
+      "Middleware - All cookies:",
+      request.cookies
+        .getAll()
+        .map((c) => `${c.name}=${c.value.substring(0, 20)}...`)
+    );
+    console.log(
+      "Middleware - access token:",
+      accessToken ? `${accessToken.substring(0, 20)}...` : "undefined"
+    );
+
     if (!accessToken) {
       // Redirect to sign-in if no token
       const signInUrl = new URL("/auth/sign-in", request.url);
