@@ -1017,7 +1017,10 @@ export default function SellMultipleItemsForm() {
                                     className="text-sm font-medium mb-2 block text-slate-900 dark:text-slate-100"
                                   >
                                     Item Name{" "}
-                                    <span className="text-red-500">*</span>
+                                    <span className="text-red-500">*</span>{" "}
+                                    <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                                      (Don't use special charecters){" "}
+                                    </span>
                                   </Label>
                                   <Input
                                     id={`item-name-${index}`}
