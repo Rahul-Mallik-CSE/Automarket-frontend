@@ -67,27 +67,41 @@ const userSlice = createSlice({
       state.isLoading = action.payload;
     },
     initializeAuth: (state) => {
-      // Check localStorage for existing auth data
+      // Check cookies for existing auth data
       if (typeof window !== "undefined") {
         try {
-          const storedUser = localStorage.getItem("user");
-          const storedProfile = localStorage.getItem("profile");
-          const accessToken = localStorage.getItem("access_token");
+          // Helper function to get cookie value
+          const getCookie = (name: string): string | null => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) {
+              return parts.pop()?.split(";").shift() || null;
+            }
+            return null;
+          };
+
+          const storedUser = getCookie("user");
+          const storedProfile = getCookie("profile");
+          const accessToken = getCookie("access_token");
 
           if (storedUser && accessToken) {
-            state.user = JSON.parse(storedUser);
+            state.user = JSON.parse(decodeURIComponent(storedUser));
             state.isAuthenticated = true;
           }
           if (storedProfile) {
-            state.profile = JSON.parse(storedProfile);
+            state.profile = JSON.parse(decodeURIComponent(storedProfile));
           }
         } catch (error) {
-          console.error("Failed to parse stored auth data:", error);
-          // Clear corrupted data
-          localStorage.removeItem("user");
-          localStorage.removeItem("profile");
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
+          console.error(
+            "Failed to parse stored auth data from cookies:",
+            error
+          );
+          // Clear corrupted cookies
+          const expireDate = "expires=Thu, 01 Jan 1970 00:00:01 GMT";
+          document.cookie = `user=; path=/; ${expireDate};`;
+          document.cookie = `profile=; path=/; ${expireDate};`;
+          document.cookie = `access_token=; path=/; ${expireDate};`;
+          document.cookie = `refresh_token=; path=/; ${expireDate};`;
         }
         state.isLoading = false;
       }
@@ -118,16 +132,20 @@ export function useAuth() {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Clear any existing cookies before attempting login
+      if (typeof window !== "undefined") {
+        const expireDate = "expires=Thu, 01 Jan 1970 00:00:01 GMT";
+        document.cookie = `access_token=; path=/; ${expireDate};`;
+        document.cookie = `refresh_token=; path=/; ${expireDate};`;
+        document.cookie = `user=; path=/; ${expireDate};`;
+        document.cookie = `profile=; path=/; ${expireDate};`;
+        document.cookie = `user_role=; path=/; ${expireDate};`;
+      }
+
       const result = await loginMutation({ email, password }).unwrap();
 
       if (result?.success && result?.data) {
-        // Store tokens and user data in localStorage
-        localStorage.setItem("access_token", result.data.access_token);
-        localStorage.setItem("refresh_token", result.data.refresh_token);
-        localStorage.setItem("user", JSON.stringify(result.data.user));
-        localStorage.setItem("profile", JSON.stringify(result.data.profile));
-
-        // Also store in cookies for middleware access
+        // Store tokens and user data in cookies only
         if (typeof window !== "undefined") {
           // Determine if we're in a secure context (HTTPS or localhost)
           const isSecureContext =
@@ -141,9 +159,50 @@ export function useAuth() {
             ? "; samesite=strict"
             : "; samesite=lax";
 
-          document.cookie = `access_token=${result.data.access_token}; path=/${secureFlag}${sameSiteFlag}; max-age=${7 * 24 * 60 * 60}`; // 7 days
-          document.cookie = `refresh_token=${result.data.refresh_token}; path=/${secureFlag}${sameSiteFlag}; max-age=${30 * 24 * 60 * 60}`; // 30 days
-          document.cookie = `user_role=${result.data.user.role}; path=/${secureFlag}${sameSiteFlag}; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          // Compute expires dates
+          const now = new Date();
+          const accessExpires = new Date(now.getTime() + 24 * 60 * 60 * 1000); // +1 day
+          const refreshExpires = new Date(
+            now.getTime() + 30 * 24 * 60 * 60 * 1000
+          ); // +30 days
+
+          const accessExpiresStr = `; expires=${accessExpires.toUTCString()}`;
+          const refreshExpiresStr = `; expires=${refreshExpires.toUTCString()}`;
+
+          // Encode user and profile data for cookie storage
+          const userEncoded = encodeURIComponent(
+            JSON.stringify(result.data.user)
+          );
+          const profileEncoded = encodeURIComponent(
+            JSON.stringify(result.data.profile)
+          );
+
+          // Set cookies (access token expires in 1 day)
+          document.cookie =
+            `access_token=${result.data.access_token}; path=/` +
+            accessExpiresStr +
+            secureFlag +
+            sameSiteFlag;
+          document.cookie =
+            `refresh_token=${result.data.refresh_token}; path=/` +
+            refreshExpiresStr +
+            secureFlag +
+            sameSiteFlag;
+          document.cookie =
+            `user_role=${result.data.user.role}; path=/` +
+            accessExpiresStr +
+            secureFlag +
+            sameSiteFlag;
+          document.cookie =
+            `user=${userEncoded}; path=/` +
+            accessExpiresStr +
+            secureFlag +
+            sameSiteFlag;
+          document.cookie =
+            `profile=${profileEncoded}; path=/` +
+            accessExpiresStr +
+            secureFlag +
+            sameSiteFlag;
         }
 
         // Update Redux state
@@ -163,24 +222,24 @@ export function useAuth() {
   };
 
   const logout = () => {
-    // Clear local storage and state (no API call needed)
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("profile");
-
-    // Clear cookies
+    // Clear cookies only (no localStorage)
     if (typeof window !== "undefined") {
       // Clear cookies for all possible configurations
       const expireDate = "expires=Thu, 01 Jan 1970 00:00:01 GMT";
+
+      // Clear without secure flag
       document.cookie = `access_token=; path=/; ${expireDate};`;
       document.cookie = `refresh_token=; path=/; ${expireDate};`;
       document.cookie = `user_role=; path=/; ${expireDate};`;
+      document.cookie = `user=; path=/; ${expireDate};`;
+      document.cookie = `profile=; path=/; ${expireDate};`;
 
       // Also clear with secure flag in case they were set with it
       document.cookie = `access_token=; path=/; secure; ${expireDate};`;
       document.cookie = `refresh_token=; path=/; secure; ${expireDate};`;
       document.cookie = `user_role=; path=/; secure; ${expireDate};`;
+      document.cookie = `user=; path=/; secure; ${expireDate};`;
+      document.cookie = `profile=; path=/; secure; ${expireDate};`;
     }
 
     dispatch(clearUser());
