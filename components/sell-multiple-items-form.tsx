@@ -746,7 +746,9 @@ export default function SellMultipleItemsForm() {
   const handleNameChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
       const value = e.target.value;
-      updateItemField(index, "name", value);
+      // Allow only letters, numbers, spaces, hyphens, commas, periods, and apostrophes
+      const sanitizedValue = value.replace(/[^a-zA-Z0-9\s,.\-']/g, "");
+      updateItemField(index, "name", sanitizedValue);
     },
     [updateItemField]
   );

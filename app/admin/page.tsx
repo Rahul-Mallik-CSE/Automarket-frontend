@@ -993,7 +993,8 @@ export default function AdminDashboard() {
                             {/* price edit button */}
                             <Button
                               onClick={() => handleEditPrice(product)}
-                              className="h-6 w-6 bg-transparent hover:bg-gray-200 text-black"
+                              disabled={product.status.current === "PENDING"}
+                              className="h-6 w-6 bg-transparent hover:bg-gray-200 text-black disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <PenLine />
                             </Button>
