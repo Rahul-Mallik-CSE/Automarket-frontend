@@ -187,6 +187,30 @@ export default function SellMultipleItemsForm() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
+  // Format phone number for display as user types
+  const formatPhoneNumber = useCallback((value: string) => {
+    // Remove all non-digit characters
+    const cleaned = value.replace(/\D/g, "");
+
+    // Format as (123) 456-7890
+    if (cleaned.length <= 3) {
+      return cleaned;
+    } else if (cleaned.length <= 6) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+    } else {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
+    }
+  }, []);
+
+  // Handle phone number input change
+  const handlePhoneChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const formatted = formatPhoneNumber(e.target.value);
+      setPhone(formatted);
+    },
+    [formatPhoneNumber]
+  );
+
   // Format phone number for API
   const formatPhoneForApi = useCallback((phone: string) => {
     if (!phone) return "";
@@ -541,6 +565,10 @@ export default function SellMultipleItemsForm() {
       if (step1Valid) {
         setFormStep(2);
         scrollToFormTop();
+        // Focus on full name input after transition
+        setTimeout(() => {
+          fullNameInputRef.current?.focus();
+        }, 100);
       }
     },
     [step1Valid, scrollToFormTop]
@@ -1018,15 +1046,15 @@ export default function SellMultipleItemsForm() {
                                   >
                                     Item Name{" "}
                                     <span className="text-red-500">*</span>{" "}
-                                    <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                                    {/* <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
                                       (Don't use special charecters){" "}
-                                    </span>
+                                    </span> */}
                                   </Label>
                                   <Input
                                     id={`item-name-${index}`}
                                     value={item.name || ""}
                                     onChange={(e) => handleNameChange(e, index)}
-                                    placeholder="e.g., Leather Sofa, Samsung TV"
+                                    // placeholder="e.g., Leather Sofa, Samsung TV"
                                     className="transition-all duration-200"
                                     required
                                   />
@@ -1069,7 +1097,7 @@ export default function SellMultipleItemsForm() {
                                       htmlFor={`item-description-${index}`}
                                       className="text-sm font-medium text-slate-900 dark:text-slate-100"
                                     >
-                                      Brief Description{" "}
+                                      Item Description{" "}
                                       <span className="text-red-500">*</span>{" "}
                                       <span className="text-xs font-normal pl-2">
                                         (Description must be at least 10
@@ -1087,7 +1115,7 @@ export default function SellMultipleItemsForm() {
                                     onChange={(e) =>
                                       handleDescriptionChange(e, index)
                                     }
-                                    placeholder="Describe your item in detail including brand, model, size, color, etc. (minimum 10 characters required)"
+                                    // placeholder="Describe your item in detail including brand, model, size, color, etc. (minimum 10 characters required)"
                                     rows={3}
                                     className="transition-all duration-200"
                                     required
@@ -1247,7 +1275,7 @@ export default function SellMultipleItemsForm() {
                                       htmlFor={`item-issues-${index}`}
                                       className="text-sm font-medium text-slate-900 dark:text-slate-100"
                                     >
-                                      Any issues or defects?{" "}
+                                      Additional Information{" "}
                                       <span className="text-red-500">*</span>
                                     </Label>
                                     <div className="text-xs text-slate-500 dark:text-slate-400">
@@ -1260,7 +1288,7 @@ export default function SellMultipleItemsForm() {
                                     onChange={(e) =>
                                       handleIssuesChange(e, index)
                                     }
-                                    placeholder="Please describe any scratches, dents, missing parts, or functional issues. If none, please write 'None'."
+                                    // placeholder="Please describe any scratches, dents, missing parts, or functional issues. If none, please write 'None'."
                                     rows={3}
                                     className="transition-all duration-200"
                                     required
@@ -1785,7 +1813,7 @@ export default function SellMultipleItemsForm() {
                           name="phone"
                           type="tel"
                           value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
+                          onChange={handlePhoneChange}
                           placeholder="(123) 456-7890"
                           className="transition-all duration-200"
                           required
@@ -2081,7 +2109,7 @@ export default function SellMultipleItemsForm() {
                                 )}
                               </div>
 
-                              <Button
+                              {/* <Button
                                 type="button"
                                 onClick={calculatePriceEstimates}
                                 variant="outline"
@@ -2089,7 +2117,7 @@ export default function SellMultipleItemsForm() {
                               >
                                 <RefreshCw className="w-4 h-4 mr-2" />
                                 Recalculate Prices
-                              </Button>
+                              </Button> */}
                             </div>
                           )}
                         </div>
@@ -2215,13 +2243,13 @@ export default function SellMultipleItemsForm() {
                   price offer.
                 </p>
 
-                <p className="text-sm mb-8 text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
+                {/* <p className="text-sm mb-8 text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
                   Your images have been stored in the{" "}
                   <span className="font-medium text-blue-600 dark:text-blue-400">
                     item_images
                   </span>{" "}
                   bucket.
-                </p>
+                </p> */}
 
                 <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-md max-w-md mx-auto flex items-center gap-3">
                   <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
