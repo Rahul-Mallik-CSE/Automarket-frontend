@@ -37,7 +37,6 @@ import {
 } from "lucide-react";
 import ContentAnimation from "@/components/content-animation";
 import { useToast } from "@/hooks/use-toast";
-import AddressAutocomplete from "@/components/address-autocomplete";
 import {
   Accordion,
   AccordionContent,
@@ -1310,21 +1309,21 @@ export default function SellMultipleItemsForm() {
                                     onValueChange={setActiveTab}
                                     className="w-full"
                                   >
-                                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                                    <TabsList className="grid w-full grid-cols-1 mb-4">
                                       <TabsTrigger
                                         value="upload"
-                                        className="flex items-center gap-2"
+                                        className="flex items-center gap-2 w-full"
                                       >
                                         <Camera className="h-4 w-4" />
                                         <span>Upload Photos</span>
                                       </TabsTrigger>
-                                      <TabsTrigger
+                                      {/* <TabsTrigger
                                         value="url"
                                         className="flex items-center gap-2"
                                       >
                                         <LinkIcon className="h-4 w-4" />
                                         <span>Image URL</span>
-                                      </TabsTrigger>
+                                      </TabsTrigger> */}
                                     </TabsList>
 
                                     <TabsContent
@@ -1352,8 +1351,7 @@ export default function SellMultipleItemsForm() {
                                           </p>
                                           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                             {(item.photos || []).length} photos
-                                            uploaded (max 10) - uploads to
-                                            item_images bucket
+                                            uploaded (max 10)
                                           </p>
                                         </div>
                                         <input
@@ -1373,7 +1371,7 @@ export default function SellMultipleItemsForm() {
                                       </div>
                                     </TabsContent>
 
-                                    <TabsContent value="url" className="mt-0">
+                                    {/* <TabsContent value="url" className="mt-0">
                                       <div className="space-y-4">
                                         <div className="flex gap-2">
                                           <Input
@@ -1418,15 +1416,14 @@ export default function SellMultipleItemsForm() {
                                           </div>
                                         )}
                                       </div>
-                                    </TabsContent>
+                                    </TabsContent> */}
                                   </Tabs>
 
                                   {/* Photo previews */}
                                   {item.photos && item.photos.length > 0 && (
                                     <div className="mt-4">
                                       <Label className="text-sm font-medium mb-2 block text-slate-900 dark:text-slate-100">
-                                        Uploaded Photos ({item.photos.length}) -
-                                        Stored in item_images bucket
+                                        Uploaded Photos ({item.photos.length})
                                       </Label>
                                       <div className="flex flex-wrap gap-3">
                                         {item.photos.map(
@@ -1857,16 +1854,30 @@ export default function SellMultipleItemsForm() {
                         )}
                       </div>
 
-                      {/* Address Autocomplete */}
+                      {/* Pickup Address */}
                       <div className="transition-all">
-                        <AddressAutocomplete
+                        <Label
+                          htmlFor="address"
+                          className="text-sm font-medium mb-2 flex items-center gap-2 text-slate-900 dark:text-slate-100"
+                        >
+                          <Package className="w-4 h-4 text-blue-500" />
+                          <span>
+                            Pickup Address (town and zipcode)
+                            <span className="text-red-500">*</span>
+                          </span>
+                        </Label>
+                        <Input
+                          id="address"
+                          name="address"
                           value={address}
-                          onChange={setAddress}
-                          error={formErrors.address}
-                          required={true}
-                          label="Pickup Address"
-                          placeholder="Start typing your address..."
+                          onChange={(e) => setAddress(e.target.value)}
+                          placeholder="Enter your town - zipcode"
+                          className="transition-all duration-200"
+                          required
                         />
+                        {formErrors.address && (
+                          <ErrorMessage message={formErrors.address} />
+                        )}
                       </div>
 
                       {/* Show items summary in step 2 */}
