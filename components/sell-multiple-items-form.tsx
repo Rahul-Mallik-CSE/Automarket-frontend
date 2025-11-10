@@ -252,8 +252,7 @@ export default function SellMultipleItemsForm() {
   const validateItem = useCallback((item: any) => {
     if (!item) return false;
     const hasPhotos = item.photos && item.photos.length >= 1;
-    const hasValidDescription =
-      item.description?.trim() && item.description.trim().length >= 10;
+    const hasValidDescription = item.description?.trim();
     return (
       item.name?.trim() !== "" &&
       hasValidDescription &&
@@ -448,7 +447,6 @@ export default function SellMultipleItemsForm() {
       (item) =>
         item.name?.trim() &&
         item.description?.trim() &&
-        item.description.trim().length >= 10 &&
         item.condition &&
         item.issues?.trim() &&
         item.photos?.length > 0
@@ -1097,11 +1095,9 @@ export default function SellMultipleItemsForm() {
                                       className="text-sm font-medium text-slate-900 dark:text-slate-100"
                                     >
                                       Item Description{" "}
-                                      <span className="text-red-500">*</span>{" "}
-                                      <span className="text-xs font-normal pl-2">
-                                        (Description must be at least 10
-                                        characters)
-                                      </span>
+                                      <span className="text-red-500">
+                                        *
+                                      </span>{" "}
                                     </Label>
                                     <div className="text-xs text-slate-500 dark:text-slate-400">
                                       {(item.description || "").length}{" "}
@@ -1862,7 +1858,7 @@ export default function SellMultipleItemsForm() {
                         >
                           <Package className="w-4 h-4 text-blue-500" />
                           <span>
-                            Pickup Address (town and zipcode)
+                            Pickup Address
                             <span className="text-red-500">*</span>
                           </span>
                         </Label>
@@ -1871,7 +1867,7 @@ export default function SellMultipleItemsForm() {
                           name="address"
                           value={address}
                           onChange={(e) => setAddress(e.target.value)}
-                          placeholder="Enter your town - zipcode"
+                          placeholder="Address, town, zip"
                           className="transition-all duration-200"
                           required
                         />
