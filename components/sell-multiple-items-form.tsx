@@ -1837,11 +1837,7 @@ export default function SellMultipleItemsForm() {
                               .toISOString()
                               .split("T")[0]
                           } // Tomorrow
-                          onChange={(e) => {
-                            setPickupDate(e.target.value);
-                            // Blur the input to make the calendar disappear
-                            e.target.blur();
-                          }}
+                          onChange={(e) => setPickupDate(e.target.value)}
                           className="transition-all duration-200"
                           required
                         />
