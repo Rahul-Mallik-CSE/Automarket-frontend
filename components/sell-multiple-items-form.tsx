@@ -545,6 +545,18 @@ export default function SellMultipleItemsForm() {
     );
   }, [fullName, email, phone, address, pickupDate, termsAccepted]);
 
+  // Auto-focus on full name input when moving to step 2
+  useEffect(() => {
+    if (formStep === 2 && fullNameInputRef.current) {
+      // Use requestAnimationFrame for better iOS compatibility
+      requestAnimationFrame(() => {
+        fullNameInputRef.current?.focus();
+        // Fallback for iOS - try to trigger the keyboard
+        fullNameInputRef.current?.click();
+      });
+    }
+  }, [formStep]);
+
   // Get step status
   const getStepStatus = useCallback(
     (step: number) => {
@@ -562,10 +574,6 @@ export default function SellMultipleItemsForm() {
       if (step1Valid) {
         setFormStep(2);
         scrollToFormTop();
-        // Focus on full name input after transition
-        setTimeout(() => {
-          fullNameInputRef.current?.focus();
-        }, 100);
       }
     },
     [step1Valid, scrollToFormTop]
