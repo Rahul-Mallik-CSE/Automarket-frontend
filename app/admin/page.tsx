@@ -22,6 +22,7 @@ import {
   useGetAdminActivitiesQuery,
   useUpdateProductPriceMutation,
   useUpdateProductStatusMutation,
+  useUpdateEstimatedValueMutation,
   type Product,
 } from "@/redux/features/adminAPI";
 import {
@@ -186,8 +187,13 @@ export default function AdminDashboard() {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showPriceEditModal, setShowPriceEditModal] = useState(false);
+  const [showEstimatedPriceEditModal, setShowEstimatedPriceEditModal] =
+    useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingEstimatedProduct, setEditingEstimatedProduct] =
+    useState<Product | null>(null);
   const [newPrice, setNewPrice] = useState("");
+  const [newEstimatedPrice, setNewEstimatedPrice] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
   const { user, profile, logout } = useAuth();
 
@@ -212,6 +218,10 @@ export default function AdminDashboard() {
   // Update product price mutation
   const [updateProductPrice, { isLoading: isPriceUpdating }] =
     useUpdateProductPriceMutation();
+
+  // Update estimated value mutation
+  const [updateEstimatedValue, { isLoading: isEstimatedPriceUpdating }] =
+    useUpdateEstimatedValueMutation();
 
   // Update product status mutation
   const [updateProductStatus, { isLoading: isStatusUpdating }] =
@@ -561,6 +571,77 @@ export default function AdminDashboard() {
     );
     setAdminNotes("");
     setShowPriceEditModal(true);
+  };
+
+  // Open estimated price edit modal
+  const handleEditEstimatedPrice = (product: Product) => {
+    setEditingEstimatedProduct(product);
+    setNewEstimatedPrice(product.price.estimated_value.toString());
+    setShowEstimatedPriceEditModal(true);
+  };
+
+  // Handle estimated price update submission
+  const handleEstimatedPriceUpdate = async () => {
+    if (!editingEstimatedProduct || !newEstimatedPrice) {
+      toast("Please enter a valid estimated price");
+      return;
+    }
+
+    // Validate price is a positive number
+    const priceValue = parseFloat(newEstimatedPrice);
+    if (isNaN(priceValue) || priceValue <= 0) {
+      toast("Please enter a valid positive price");
+      return;
+    }
+
+    try {
+      console.log("Updating estimated value for product:", {
+        id: editingEstimatedProduct.id,
+        estimated_value: newEstimatedPrice,
+      });
+
+      const result = await updateEstimatedValue({
+        id: editingEstimatedProduct.id,
+        estimated_value: newEstimatedPrice,
+      }).unwrap();
+
+      console.log("Estimated value update response:", result);
+
+      // Close modal and reset state
+      setShowEstimatedPriceEditModal(false);
+      setEditingEstimatedProduct(null);
+      setNewEstimatedPrice("");
+
+      // Refetch activities to get updated data
+      refetchActivities();
+
+      toast(`Estimated value updated successfully! ${result.message}`);
+    } catch (err: any) {
+      console.error("Error updating estimated value:", err);
+
+      // Enhanced error handling
+      let errorMessage = "Failed to update estimated value";
+
+      if (err?.data) {
+        if (err.data.detail) {
+          errorMessage = err.data.detail;
+        } else if (err.data.error) {
+          errorMessage = err.data.error;
+        } else if (err.data.message) {
+          errorMessage = err.data.message;
+        } else if (typeof err.data === "string") {
+          errorMessage = err.data;
+        } else {
+          errorMessage = JSON.stringify(err.data);
+        }
+      } else if (err?.message) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      toast(`Failed to update estimated value: ${errorMessage}`);
+    }
   };
 
   // Handle price update submission
@@ -1002,6 +1083,12 @@ export default function AdminDashboard() {
                           <div className="text-xs text-gray-900">
                             Estimated: $
                             {product.price.estimated_value.toFixed(2)}
+                            <Button
+                              onClick={() => handleEditEstimatedPrice(product)}
+                              className="h-6 w-6 bg-transparent hover:bg-gray-200 text-black"
+                            >
+                              <PenLine />
+                            </Button>
                           </div>
                           <div className="text-xs text-gray-500">
                             Range: ${product.price.min_range.toFixed(2)} - $
@@ -1453,6 +1540,91 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Estimated Price Edit Dialog */}
+      <Dialog
+        open={showEstimatedPriceEditModal}
+        onOpenChange={setShowEstimatedPriceEditModal}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Estimated Value</DialogTitle>
+            <DialogDescription>
+              Update the estimated value for this product. This is the initial
+              price estimate based on item analysis.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingEstimatedProduct && (
+            <div className="space-y-4 py-4">
+              {/* Product Info */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-2">
+                  {editingEstimatedProduct.item.title}
+                </h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-500">
+                      Current Estimated Value:
+                    </span>
+                    <p className="font-semibold text-blue-600">
+                      $
+                      {editingEstimatedProduct.price.estimated_value.toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Price Range:</span>
+                    <p className="font-semibold text-gray-900">
+                      ${editingEstimatedProduct.price.min_range.toFixed(2)} - $
+                      {editingEstimatedProduct.price.max_range.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* New Estimated Price Input */}
+              <div className="space-y-2">
+                <Label htmlFor="newEstimatedPrice">
+                  New Estimated Value ($)
+                </Label>
+                <Input
+                  id="newEstimatedPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newEstimatedPrice}
+                  onChange={(e) => setNewEstimatedPrice(e.target.value)}
+                  placeholder="Enter new estimated value"
+                  className="text-lg font-semibold"
+                />
+                <p className="text-xs text-gray-500">
+                  Enter the updated estimated value based on market analysis or
+                  manual review.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowEstimatedPriceEditModal(false)}
+              disabled={isEstimatedPriceUpdating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEstimatedPriceUpdate}
+              disabled={isEstimatedPriceUpdating || !newEstimatedPrice}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isEstimatedPriceUpdating
+                ? "Updating..."
+                : "Update Estimated Value"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Price Edit Dialog */}
       <Dialog open={showPriceEditModal} onOpenChange={setShowPriceEditModal}>

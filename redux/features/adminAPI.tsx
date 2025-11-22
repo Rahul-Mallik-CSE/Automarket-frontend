@@ -188,6 +188,30 @@ const adminAPI = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["AdminActivities", "AdminStats"],
     }),
+
+    // Update estimated value
+    updateEstimatedValue: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        product_id: number;
+        old_estimated_value: string;
+        new_estimated_value: string;
+      },
+      {
+        id: number;
+        estimated_value: string;
+      }
+    >({
+      query: ({ id, estimated_value }) => ({
+        url: `/admin/products/${id}/update-estimated-value/`,
+        method: "PATCH",
+        body: {
+          estimated_value: estimated_value,
+        },
+      }),
+      invalidatesTags: ["AdminActivities", "AdminStats"],
+    }),
   }),
 });
 
@@ -196,6 +220,7 @@ export const {
   useGetAdminActivitiesQuery,
   useUpdateProductPriceMutation,
   useUpdateProductStatusMutation,
+  useUpdateEstimatedValueMutation,
 } = adminAPI;
 
 export default adminAPI;
